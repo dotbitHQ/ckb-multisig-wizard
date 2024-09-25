@@ -1,0 +1,14 @@
+---
+ckbNodeRpc: 'http://127.0.0.1:8114'
+larkApiKey: ''
+
+database: './database/database.json'
+transactionsDir: './database/tx/'
+
+ckbCliBin: ''
+toolboxCliBin: ''
+
+loglevel: 'info'
+env: ''
+
+multisigConfigs:

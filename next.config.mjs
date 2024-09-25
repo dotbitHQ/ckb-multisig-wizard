@@ -1,4 +1,22 @@
+import config from 'config'
+
 /** @type {import('next').NextConfig} */
-const nextConfig = {};
+const nextConfig = {
+    serverRuntimeConfig: {
+        ckbNodeRpc: config.ckbNodeRpc,
+        larkApiKey: config.larkApiKey,
+
+        database: config.database,
+        transactionsDir: config.transactionsDir,
+
+        ckbCliBin: config.ckbCliBin,
+        toolboxCliBin: config.toolboxCliBin,
+
+        loglevel: config.loglevel,
+        env: config.env,
+
+        multisigConfigs: config.multisigConfigs,
+    }
+};
 
 export default nextConfig;
