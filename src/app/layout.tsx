@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+
+import '@fontsource/roboto/300.css';
+import '@fontsource/roboto/400.css';
+import '@fontsource/roboto/500.css';
+import '@fontsource/roboto/700.css';
 import "./globals.css";
+
+import { Box, Typography, AppBar, Toolbar } from '@mui/material';
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -25,10 +32,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
-        {children}
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} >
+        <Box sx={{ width: '100%', maxWidth: '100%' }}>
+          {/* Sidebar */}
+          <AppBar position="static" sx={{ mb: 2 }}>
+            <Toolbar sx={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--primary-color)' }}>
+              <Typography variant="h4" component="h1" sx={{ backgroundColor: 'var(--primary-color)', color: 'white' }}>
+                🪄 CKB Multisig Wizard
+              </Typography>
+            </Toolbar>
+          </AppBar>
+
+          {children}
+        </Box>
       </body>
     </html>
   );
