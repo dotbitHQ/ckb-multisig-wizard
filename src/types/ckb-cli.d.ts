@@ -1,7 +1,7 @@
 interface TxHelper {
     transaction: RPC.RawTransaction; // Assuming TransactionView is defined elsewhere
     multisig_configs: Record<string, MultisigConfig>; // H160 can be represented as a string
-    signatures: Map<string, Set<string>>; // Bytes can be represented as a string
+    signatures: Record<string, string[]>; // Bytes can be represented as a string
 }
 
 interface MultisigConfig {

@@ -2,8 +2,6 @@ import { createLogger, format, transports } from 'winston'
 
 import config from './config'
 
-console.log('config:', config())
-
 const rootLogger = createLogger({
   level: config().loglevel,
   defaultMeta: {

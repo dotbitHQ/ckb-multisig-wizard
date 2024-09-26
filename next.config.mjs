@@ -16,7 +16,7 @@ const nextConfig = {
         env: config.env,
 
         multisigConfigs: config.multisigConfigs,
-    }
+    },
 };
 
 export default nextConfig;

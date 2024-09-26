@@ -1,7 +1,9 @@
 import { MultisigConfig } from "@/lib/config";
 import config from "@/lib/config";
 import { rawTransactionToHash } from '@nervosnetwork/ckb-sdk-utils';
+import { scriptToAddress as ckbScriptToAddress } from '@nervosnetwork/ckb-sdk-utils'
 import { ckbRpc } from './ckb'
+import { execSync } from "child_process";
 
 export function findMultisigConfigByTx(ckb_cli_tx: TxHelper): MultisigConfig | null {
     const multisigConfigs: Record<string, MultisigConfig> = {}
@@ -39,4 +41,43 @@ export function calcTxHash(ckb_cli_tx: TxHelper): string {
     const txHash = rawTransactionToHash(tx);
 
     return txHash;
+}
+
+export function calcTxDescription(env: string, tx_file_path: string): string {
+    const bin = config().toolboxCliBin;
+
+    const cmd = `${bin} sandbox ${env === 'mainnet' ? '' : '-t'} -p ${tx_file_path}`;
+    const result = execSync(cmd);
+
+    return result.toString();
+}
+
+export function calcTxDigest(address: string, tx_file_path: string): string {
+    const bin = config().toolboxCliBin;
+
+    const cmd = `${bin} tx get-digest --format ckb-cli -a ${address} -t ${tx_file_path}`;
+    const result = execSync(cmd);
+
+    return result.toString();
+}
+
+export function scriptToAddress(script: RPC.Script, env: string = 'mainnet'): string {
+    const resultScript = ckbRpc.resultFormatter.toScript(script)
+    const address = ckbScriptToAddress(resultScript, env === 'mainnet' ? true : false)
+
+    return address
+}
+
+export function pushTransactionByCkbCli(tx_file_path: string): string {
+    const bin = config().ckbCliBin;
+
+    const cmd = `${bin} tx send --skip-check --local-only --tx-file ${tx_file_path}`;
+    const result = execSync(cmd);
+
+    return result.toString();
+}
+
+export async function getTransactionStatus(tx_hash: string): Promise<CKBComponents.TransactionStatus | string> {
+    const result = await ckbRpc.getTransaction(tx_hash)
+    return result.txStatus.status
 }

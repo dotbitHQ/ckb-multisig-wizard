@@ -1,7 +1,6 @@
 import path from 'path';
 import { writeFile, mkdir } from 'fs/promises';
-import { NextApiRequest, NextApiResponse } from "next";
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import config from '@/lib/config'
 import rootLogger from '@/lib/log'
 import getDb from '@/lib/database'
@@ -10,7 +9,7 @@ import * as util from '@/lib/util';
 const route = '/api/upload/tx'
 const logger = rootLogger.child({ route });
 
-export async function GET(req: NextApiRequest, res: NextApiResponse) {
+export async function GET(req: NextRequest) {
     logger.debug(`GET ${route}`)
 
     return NextResponse.json({
@@ -18,7 +17,7 @@ export async function GET(req: NextApiRequest, res: NextApiResponse) {
     })
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
     logger.debug(`POST ${route}`)
 
     const db = await getDb();
@@ -61,6 +60,10 @@ export async function POST(req: Request) {
                 logger.info(`Found known multisig config in ${filePath}`)
 
                 const tx_hash = util.calcTxHash(ckb_cli_tx)
+                const description = util.calcTxDescription(process.env.NEXT_PUBLIC_CKB_ENV, filePath)
+                // Convert multisigConfig.script to ckb address
+                const address = util.scriptToAddress(multisigConfig.script, config().env)
+                const digest = util.calcTxDigest(address, filePath)
 
                 await db.replaceInsertTx({
                     id: '',
@@ -68,6 +71,9 @@ export async function POST(req: Request) {
                     signed: [],
                     threshold: 1,
                     tx_json_path: filePath,
+                    multisig_config: multisigConfig,
+                    digest,
+                    description,
                     uploaded_at: new Date().toISOString(),
                     pushed_at: null,
                 })

@@ -1,7 +1,7 @@
 import { Low } from 'lowdb';
 import { JSONFilePreset } from 'lowdb/node';
 
-import config from './config'
+import config, { MultisigConfig } from './config'
 
 export interface DbSignature {
   lock_args: string,
@@ -14,6 +14,9 @@ export interface DbTransaction {
   signed: DbSignature[],
   threshold: number,
   tx_json_path: string,
+  multisig_config: MultisigConfig,
+  digest: string,
+  description: string,
   pushed_at: string | null,
   uploaded_at: string,
 }
