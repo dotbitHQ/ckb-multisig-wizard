@@ -27,6 +27,7 @@ export default function Page() {
   const [successAlert, setSuccessAlert] = useState<string | null>(null);
   const [txStatus, setTxStatus] = useState<string | null>(null);
   const [openAlert, setOpenAlert] = useState(false);
+  const [ledgerLockArgs, setLedgerLockArgs] = useState<string | null>(null);
 
   useEffect(() => {
     fetchTransactions();
@@ -143,7 +144,7 @@ export default function Page() {
       return;
     }
 
-    console.info(`Start signin with ledger ...`);
+    console.info(`Start signing with ledger ...`);
 
     try {
       if (!lckb) {
@@ -166,6 +167,8 @@ export default function Page() {
       console.info(`The digest to sign: ${selectedTransaction.digest}`);
 
       const keydata = await lckb.getWalletPublicKey("44'/309'/0'", false)
+      setLedgerLockArgs(keydata.lockArg); // Store the lock_args
+
       const signature = await lckb.signMessageHash("44'/309'/0'", selectedTransaction.digest.replace(/^0x/, ''))
 
       console.info(`The keydata returned from ledger:`, keydata);
@@ -199,6 +202,7 @@ export default function Page() {
     } catch (error) {
       console.error('Error signing with ledger:', error);
       setErrorAlert(`Error signing with ledger: ${error}`);
+      setLedgerLockArgs(null); // Reset lock_args on error
     } finally {
       setOpenAlert(false);
     }
@@ -445,9 +449,21 @@ export default function Page() {
               <Paper sx={{ p: 2, mb: 2 }}>
                 <Typography variant="h6" sx={{ mb: 2 }}>Sign Automatically with Ledger</Typography>
 
-                <Button variant="contained" color="primary" onClick={handleLedgerSign}>
-                  Sign with Ledger
-                </Button>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Button variant="contained" color="primary" onClick={handleLedgerSign}>
+                    Sign with Ledger
+                  </Button>
+                  {ledgerLockArgs && (
+                    <>
+                      <Typography sx={{ ml: 2 }}>
+                        Lock Args(The public key hash of the signed key):
+                      </Typography>
+                      <Typography sx={{ ml: 2, fontFamily: 'monospace', color: '#1565c0' }}>
+                        0x{ledgerLockArgs}
+                      </Typography>
+                    </>
+                  )}
+                </Box>
               </Paper>
 
               <Paper sx={{ p: 2, mb: 2 }}>
