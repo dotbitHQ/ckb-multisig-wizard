@@ -11,6 +11,11 @@ import { parseISO } from 'date-fns';
 import { formatInTimeZone } from 'date-fns-tz';
 import { DbSignature, DbTransaction } from '@/lib/database';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import TransportWebHID from "@ledgerhq/hw-transport-webhid";
+import TransportWebUSB from "@ledgerhq/hw-transport-webusb";
+import LedgerCkb from "@linkdesu/hw-app-ckb";
+
+let lckb: LedgerCkb | null = null;
 
 export default function Page() {
   const [transactions, setTransactions] = useState<DbTransaction[]>([]);
@@ -21,6 +26,7 @@ export default function Page() {
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [successAlert, setSuccessAlert] = useState<string | null>(null);
   const [txStatus, setTxStatus] = useState<string | null>(null);
+  const [openAlert, setOpenAlert] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
@@ -70,6 +76,25 @@ export default function Page() {
     setSelectedTransaction(selectedTx || null);
   };
 
+  const updateTransaction = (selectedTransaction: DbTransaction, lock_args: string, signature: string) => {
+    // Create a new signature object and ensure the signature starts with '0x'
+    const newSignature: DbSignature = {
+      lock_args,
+      signature: signature.startsWith('0x') ? signature : `0x${signature}`
+    };
+
+    const updatedTransaction = { ...selectedTransaction };
+    const existingSignatureIndex = updatedTransaction.signed.findIndex(signature => signature.lock_args === newSignature.lock_args);
+    console.log(`existingSignatureIndex: ${existingSignatureIndex}`);
+    if (existingSignatureIndex !== -1) {
+      updatedTransaction.signed[existingSignatureIndex] = newSignature;
+    } else {
+      updatedTransaction.signed.push(newSignature);
+    }
+
+    return updatedTransaction;
+  }
+
   const handleManualSignatureSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!selectedTransaction || !selectedSighashAddress || !signature) {
@@ -78,20 +103,7 @@ export default function Page() {
     }
 
     try {
-      // Create a new signature object and ensure the signature starts with '0x'
-      const newSignature: DbSignature = {
-        lock_args: selectedSighashAddress,
-        signature: signature.startsWith('0x') ? signature : `0x${signature}`
-      };
-
-      const updatedTransaction = { ...selectedTransaction };
-      const existingSignatureIndex = updatedTransaction.signed.findIndex(signature => signature.lock_args === newSignature.lock_args);
-      console.log(`existingSignatureIndex: ${existingSignatureIndex}`);
-      if (existingSignatureIndex !== -1) {
-        updatedTransaction.signed[existingSignatureIndex] = newSignature;
-      } else {
-        updatedTransaction.signed.push(newSignature);
-      }
+      const updatedTransaction = updateTransaction(selectedTransaction, selectedSighashAddress, signature);
 
       // Update the transaction in the database
       const response = await fetch(`/api/tx/${selectedTransaction.id}`, {
@@ -126,8 +138,70 @@ export default function Page() {
   };
 
   const handleLedgerSign = async () => {
-    // TODO: Implement the logic to sign with Ledger
-    console.log('Signing with Ledger...');
+    if (!selectedTransaction) {
+      setErrorAlert('No transaction selected');
+      return;
+    }
+
+    console.info(`Start signin with ledger ...`);
+
+    try {
+      if (!lckb) {
+        console.info('Init connection with ledger.');
+
+        let transport;
+        try {
+          // Try WebHID first
+          transport = await TransportWebHID.create();
+        } catch (e) {
+          // Fallback to WebUSB
+          transport = await TransportWebUSB.create();
+        }
+
+        lckb = new LedgerCkb(transport)
+      }
+
+      setOpenAlert(true);
+
+      console.info(`The digest to sign: ${selectedTransaction.digest}`);
+
+      const keydata = await lckb.getWalletPublicKey("44'/309'/0'", false)
+      const signature = await lckb.signMessageHash("44'/309'/0'", selectedTransaction.digest.replace(/^0x/, ''))
+
+      console.info(`The keydata returned from ledger:`, keydata);
+      console.info(`The signature returned from ledger: ${signature}`);
+
+      const updatedTransaction = updateTransaction(selectedTransaction, keydata.lockArg, signature);
+
+      // Update the transaction in the database
+      const response = await fetch(`/api/tx/${selectedTransaction.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updatedTransaction),
+      });
+
+      if (!response.ok) {
+        setErrorAlert('Error submitting signature: server error.');
+      } else {
+        // Update the local state
+        setSelectedTransaction(updatedTransaction);
+        setTransactions(prevTransactions =>
+          prevTransactions.map(tx =>
+            tx.id === updatedTransaction.id ? updatedTransaction : tx
+          )
+        );
+
+        // Show success message
+        setSuccessAlert('Signature submitted successfully');
+      }
+    } catch (error) {
+      console.error('Error signing with ledger:', error);
+      setErrorAlert(`Error signing with ledger: ${error}`);
+    } finally {
+      setOpenAlert(false);
+    }
   };
 
   const handlePushTx = async () => {
@@ -336,7 +410,7 @@ export default function Page() {
 
               {/* New form for manual signature submission */}
               <Paper sx={{ p: 2, mb: 2 }}>
-                <Typography variant="h6" sx={{ mb: 2 }}>Submit Signature</Typography>
+                <Typography variant="h6" sx={{ mb: 2 }}>Sign Manually</Typography>
                 <form onSubmit={handleManualSignatureSubmit}>
                   <FormControl fullWidth sx={{ mb: 2 }}>
                     <InputLabel id="sighash-address-select-label">Sighash Address</InputLabel>
@@ -368,12 +442,19 @@ export default function Page() {
                 </form>
               </Paper>
 
-              <Paper sx={{ p: 2, mb: 2, display: 'flex', justifyContent: 'space-between' }}>
-                <Button variant="contained" color="secondary" onClick={handleLedgerSign}>
+              <Paper sx={{ p: 2, mb: 2 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Sign Automatically with Ledger</Typography>
+
+                <Button variant="contained" color="primary" onClick={handleLedgerSign}>
                   Sign with Ledger
                 </Button>
+              </Paper>
+
+              <Paper sx={{ p: 2, mb: 2 }}>
+                <Typography variant="h6" sx={{ mb: 2 }}>Push Transaction to Network</Typography>
+
                 <Button variant="contained" color="secondary" onClick={handlePushTx}>
-                  Push TX
+                  Push
                 </Button>
               </Paper>
             </>
@@ -404,6 +485,13 @@ export default function Page() {
       >
         <Alert onClose={() => setSuccessAlert(null)} severity="success" sx={{ width: '100%' }}>
           {successAlert}
+        </Alert>
+      </Snackbar>
+
+      {/* Ledger Alert */}
+      <Snackbar open={openAlert} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+        <Alert severity="info" sx={{ width: '100%' }}>
+          Please confirm signing on your Ledger.
         </Alert>
       </Snackbar>
     </Grid>

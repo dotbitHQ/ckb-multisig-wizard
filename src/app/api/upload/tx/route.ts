@@ -5,6 +5,7 @@ import config from '@/lib/config'
 import rootLogger from '@/lib/log'
 import getDb from '@/lib/database'
 import * as util from '@/lib/util';
+import { formatInTimeZone } from 'date-fns-tz';
 
 const route = '/api/upload/tx'
 const logger = rootLogger.child({ route });
@@ -38,8 +39,8 @@ export async function POST(req: NextRequest) {
         }
 
         // Calculate the directory path for the transaction JSON file
-        const timestamp = new Date().toISOString().slice(0, 10);
-        const dirPath = path.join(txDir, timestamp);
+        const date = formatInTimeZone(new Date(), 'UTC', 'yyyy-MM-dd');
+        const dirPath = path.join(txDir, date);
         await mkdir(dirPath, { recursive: true });
 
         const result = []
@@ -60,7 +61,7 @@ export async function POST(req: NextRequest) {
                 logger.info(`Found known multisig config in ${filePath}`)
 
                 const tx_hash = util.calcTxHash(ckb_cli_tx)
-                const description = util.calcTxDescription(process.env.NEXT_PUBLIC_CKB_ENV, filePath)
+                const description = util.calcTxDescription(process.env.NEXT_PUBLIC_ENV!, filePath)
                 // Convert multisigConfig.script to ckb address
                 const address = util.scriptToAddress(multisigConfig.script, config().env)
                 const digest = util.calcTxDigest(address, filePath)

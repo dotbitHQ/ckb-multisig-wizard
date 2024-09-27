@@ -39,3 +39,4 @@ next-env.d.ts
 /config/local-*
 dt
 .toolbox.yaml
+.toolbox.*.yaml

@@ -20,13 +20,8 @@ export function findMultisigConfigByTx(ckb_cli_tx: TxHelper): MultisigConfig | n
         }
     })
 
-    console.log('multisigConfigs:', multisigConfigs)
-
     for (let [key, _] of Object.entries(ckb_cli_tx.multisig_configs)) {
         key = `${multisigCodeHash}-${key}`
-
-        console.log('key:', key)
-        console.log('multisigConfigs[key]:', multisigConfigs[key])
 
         if (multisigConfigs[key]) {
             return multisigConfigs[key];
