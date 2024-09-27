@@ -154,7 +154,8 @@ export default function Page() {
         try {
           // Try WebHID first
           transport = await TransportWebHID.create();
-        } catch (e) {
+        } catch (_) {
+          console.warn('Failed to connect with WebHID, try WebUSB...');
           // Fallback to WebUSB
           transport = await TransportWebUSB.create();
         }
@@ -223,13 +224,12 @@ export default function Page() {
       const response = await fetch(`/api/push/${selectedTransaction.id}`, {
         method: 'POST',
       });
+      const data = await response.json();
 
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to push transaction');
+        throw new Error(data.error || 'Failed to push transaction');
       }
 
-      const data = await response.json();
       setSuccessAlert('Transaction pushed successfully');
 
       // Update the local state to reflect the pushed transaction

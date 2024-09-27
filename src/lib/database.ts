@@ -35,7 +35,7 @@ export class Database {
       tx: []
     }
 
-    let db = await JSONFilePreset<Schema>(config().database, defaultData);
+    const db = await JSONFilePreset<Schema>(config().database, defaultData);
     await db.read()
     return new Database(db)
   }

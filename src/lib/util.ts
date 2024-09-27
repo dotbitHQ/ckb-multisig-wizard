@@ -20,7 +20,7 @@ export function findMultisigConfigByTx(ckb_cli_tx: TxHelper): MultisigConfig | n
         }
     })
 
-    for (let [key, _] of Object.entries(ckb_cli_tx.multisig_configs)) {
+    for (let [key,] of Object.entries(ckb_cli_tx.multisig_configs)) {
         key = `${multisigCodeHash}-${key}`
 
         if (multisigConfigs[key]) {

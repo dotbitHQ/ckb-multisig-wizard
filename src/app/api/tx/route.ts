@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 const route = '/api/tx'
 const logger = rootLogger.child({ route });
 
-export async function GET(req: NextRequest) {
+export async function GET(_: NextRequest) {
     logger.debug(`GET ${route}`)
 
     const db = await getDb();

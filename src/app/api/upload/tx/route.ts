@@ -10,7 +10,7 @@ import { formatInTimeZone } from 'date-fns-tz';
 const route = '/api/upload/tx'
 const logger = rootLogger.child({ route });
 
-export async function GET(req: NextRequest) {
+export async function GET(_: NextRequest) {
     logger.debug(`GET ${route}`)
 
     return NextResponse.json({
