@@ -4,6 +4,9 @@ import { rawTransactionToHash } from '@nervosnetwork/ckb-sdk-utils';
 import { scriptToAddress as ckbScriptToAddress } from '@nervosnetwork/ckb-sdk-utils'
 import { ckbRpc } from './ckb'
 import { execSync } from "child_process";
+import rootLogger from '@/lib/log'
+
+const logger = rootLogger.child({ route: 'util' });
 
 export function findMultisigConfigByTx(ckb_cli_tx: TxHelper): MultisigConfig | null {
     const multisigConfigs: Record<string, MultisigConfig> = {}
@@ -42,7 +45,8 @@ export function calcTxDescription(env: string, tx_file_path: string): string {
     const bin = config().toolboxCliBin;
 
     const cmd = `${bin} sandbox ${env === 'mainnet' ? '' : '-t'} -p ${tx_file_path}`;
-    const result = execSync(cmd);
+    logger.debug(`Execute command: ${cmd}`)
+    const result = execSync(cmd, { cwd: process.cwd() });
 
     return result.toString();
 }
@@ -51,7 +55,8 @@ export function calcTxDigest(address: string, tx_file_path: string): string {
     const bin = config().toolboxCliBin;
 
     const cmd = `${bin} tx get-digest --format ckb-cli -a ${address} -t ${tx_file_path}`;
-    const result = execSync(cmd);
+    logger.debug(`Execute command: ${cmd}`)
+    const result = execSync(cmd, { cwd: process.cwd() });
 
     return result.toString();
 }
@@ -67,7 +72,8 @@ export function pushTransactionByCkbCli(tx_file_path: string): string {
     const bin = config().ckbCliBin;
 
     const cmd = `${bin} tx send --skip-check --local-only --tx-file ${tx_file_path}`;
-    const result = execSync(cmd);
+    logger.debug(`Execute command: ${cmd}`)
+    const result = execSync(cmd, { cwd: process.cwd() });
 
     return result.toString();
 }

@@ -45,10 +45,12 @@ export class Database {
   }
 
   async getTx(id: string): Promise<DbTransaction | undefined> {
+    await this.db.read()
     return this.db.data.tx.find(transaction => transaction.id === id);
   }
 
   async getAllTx(): Promise<DbTransaction[]> {
+    await this.db.read()
     return this.db.data.tx;
   }
 

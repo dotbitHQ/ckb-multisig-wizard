@@ -5,7 +5,21 @@ import { NextRequest, NextResponse } from "next/server";
 const route = '/api/tx/[id]'
 const logger = rootLogger.child({ route });
 
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+    const { id } = params;
+    logger.debug(`GET ${route} id: ${id}`);
 
+    try {
+        const db = await getDb();
+        const tx = await db.getTx(id);
+        return NextResponse.json({ result: tx }, { status: 200 });
+    } catch (error) {
+        logger.error('Error getting transaction:', error);
+        return NextResponse.json({
+            error: 'Failed to get transaction'
+        }, { status: 500 });
+    }
+}
 
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
     const { id } = params;

@@ -72,9 +72,15 @@ export default function Page() {
     }));
   };
 
-  const handleItemClick = (event: React.MouseEvent, itemId: string) => {
-    const selectedTx = transactions.find(tx => tx.id === itemId);
-    setSelectedTransaction(selectedTx || null);
+  const handleItemClick = async (_: React.MouseEvent, itemId: string) => {
+    try {
+      const response = await fetch(`/api/tx/${itemId}`);
+      const data = await response.json();
+      setSelectedTransaction(data.result);
+    } catch (error) {
+      console.error('Error fetching transaction:', error);
+      setErrorAlert(`Error fetching transaction: ${error}`);
+    }
   };
 
   const updateTransaction = (selectedTransaction: DbTransaction, lock_args: string, signature: string) => {
@@ -86,14 +92,16 @@ export default function Page() {
 
     const updatedTransaction = { ...selectedTransaction };
     const existingSignatureIndex = updatedTransaction.signed.findIndex(signature => signature.lock_args === newSignature.lock_args);
-    console.log(`existingSignatureIndex: ${existingSignatureIndex}`);
+
+    let newSign = true;
     if (existingSignatureIndex !== -1) {
       updatedTransaction.signed[existingSignatureIndex] = newSignature;
+      newSign = false;
     } else {
       updatedTransaction.signed.push(newSignature);
     }
 
-    return updatedTransaction;
+    return [newSign, updatedTransaction];
   }
 
   const handleManualSignatureSubmit = async (event: React.FormEvent) => {
@@ -175,7 +183,7 @@ export default function Page() {
       console.info(`The keydata returned from ledger:`, keydata);
       console.info(`The signature returned from ledger: ${signature}`);
 
-      const updatedTransaction = updateTransaction(selectedTransaction, keydata.lockArg, signature);
+      const [newSign, updatedTransaction] = updateTransaction(selectedTransaction, keydata.lockArg, signature);
 
       // Update the transaction in the database
       const response = await fetch(`/api/tx/${selectedTransaction.id}`, {
@@ -198,7 +206,7 @@ export default function Page() {
         );
 
         // Show success message
-        setSuccessAlert('Signature submitted successfully');
+        setSuccessAlert(newSign ? 'Signature submitted successfully' : 'Signature updated successfully');
       }
     } catch (error) {
       console.error('Error signing with ledger:', error);
