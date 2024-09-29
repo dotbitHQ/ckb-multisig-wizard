@@ -93,15 +93,15 @@ export default function Page() {
     const updatedTransaction = { ...selectedTransaction };
     const existingSignatureIndex = updatedTransaction.signed.findIndex(signature => signature.lock_args === newSignature.lock_args);
 
-    let newSign = true;
+    let isNewSign = true;
     if (existingSignatureIndex !== -1) {
       updatedTransaction.signed[existingSignatureIndex] = newSignature;
-      newSign = false;
+      isNewSign = false;
     } else {
       updatedTransaction.signed.push(newSignature);
     }
 
-    return [newSign, updatedTransaction];
+    return { isNewSign, updatedTransaction };
   }
 
   const handleManualSignatureSubmit = async (event: React.FormEvent) => {
@@ -112,7 +112,7 @@ export default function Page() {
     }
 
     try {
-      const updatedTransaction = updateTransaction(selectedTransaction, selectedSighashAddress, signature);
+      const { isNewSign, updatedTransaction } = updateTransaction(selectedTransaction, selectedSighashAddress, signature);
 
       // Update the transaction in the database
       const response = await fetch(`/api/tx/${selectedTransaction.id}`, {
@@ -136,8 +136,9 @@ export default function Page() {
         // Clear the form
         setSignature('');
         setSelectedSighashAddress('');
+
         // Show success message
-        setSuccessAlert('Signature submitted successfully');
+        setSuccessAlert(isNewSign ? 'Signature submitted successfully' : 'Signature updated successfully');
       }
 
     } catch (error) {
@@ -183,7 +184,7 @@ export default function Page() {
       console.info(`The keydata returned from ledger:`, keydata);
       console.info(`The signature returned from ledger: ${signature}`);
 
-      const [newSign, updatedTransaction] = updateTransaction(selectedTransaction, keydata.lockArg, signature);
+      const { isNewSign, updatedTransaction } = updateTransaction(selectedTransaction, keydata.lockArg, signature);
 
       // Update the transaction in the database
       const response = await fetch(`/api/tx/${selectedTransaction.id}`, {
@@ -206,7 +207,7 @@ export default function Page() {
         );
 
         // Show success message
-        setSuccessAlert(newSign ? 'Signature submitted successfully' : 'Signature updated successfully');
+        setSuccessAlert(isNewSign ? 'Signature submitted successfully' : 'Signature updated successfully');
       }
     } catch (error) {
       console.error('Error signing with ledger:', error);
