@@ -11,4 +11,29 @@ toolboxCliBin: ''
 loglevel: 'info'
 env: ''
 
+multisigScript:
+  - name: 'system-multisig'
+    typeId: ''
+  - name: 'omni-lock-multisig'
+    typeId: ''
+
+users:
+  - name: 'User01'
+    pubKeyHash: '0x0000000000000000000000000000000000000001'
+  - name: 'User02'
+    pubKeyHash: '0x0000000000000000000000000000000000000002'
+  - name: 'User03'
+    pubKeyHash: '0x0000000000000000000000000000000000000003'
+
 multisigConfigs:
+  - script:
+      code_hash: '0x5c5069eb0857efc65e1bca0c07df34c31663b3622fd3876c876320fc9634e2a8'
+      hash_type: type
+      args: '0xffffffffffffffffffffffffffffffffffffff'
+    config:
+      sighash_addresses:
+        - '0x0000000000000000000000000000000000000001'
+        - '0x0000000000000000000000000000000000000002'
+        - '0x0000000000000000000000000000000000000003'
+      require_first_n: 0
+      threshold: 2

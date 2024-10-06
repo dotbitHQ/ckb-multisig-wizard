@@ -6,6 +6,7 @@ import config, { MultisigConfig } from './config'
 export enum MultisigType {
   Default = 'system-multisig',
   OmniLock = 'omni-lock-multisig',
+  Unknown = 'unknown',
 }
 
 export interface DbSignature {

@@ -5,13 +5,14 @@ import { Box, Typography, Button, Paper, Dialog, DialogTitle, DialogContent, Dia
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useDropzone } from 'react-dropzone';
 import { useRouter } from 'next/navigation';
+import JsonEditor from '@/components/JsonEditor';
 
 export default function TransactionUploadPage () {
   const router = useRouter();
-  // Add state for controlling the error dialog
   const [openErrorDialog, setOpenErrorDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [uploadResults, setUploadResults] = useState<{ name: string; result: string }[]>([]);
+  const [jsonInput, setJsonInput] = useState('');
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     // Handle file upload logic here
@@ -29,7 +30,7 @@ export default function TransactionUploadPage () {
 
       if (Array.isArray(data.result)) {
         console.log('Upload successful(some tx may contains error message):', data);
-      setUploadResults(data.result);
+        setUploadResults(data.result);
       } else {
         console.error('Upload failed with unexpected server error');
         setErrorMessage(`Upload failed with unexpected server error`);
@@ -50,14 +51,40 @@ export default function TransactionUploadPage () {
     }
   });
 
+  const handleJsonSubmit = async () => {
+    try {
+      // Parse the JSON to ensure it's valid
+      JSON.parse(jsonInput);
+
+      const response = await fetch('/api/upload/tx', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ jsonContent: jsonInput }),
+      });
+      const data = await response.json();
+
+      if (Array.isArray(data.result)) {
+        console.log('Upload successful (some tx may contain error messages):', data);
+        setUploadResults(data.result);
+      } else {
+        console.error('Upload failed with unexpected server error');
+        setErrorMessage(`Upload failed with unexpected server error`);
+        setOpenErrorDialog(true);
+      }
+    } catch (error) {
+      console.error('Invalid JSON or upload failed, reason:', error);
+      setErrorMessage(`Invalid JSON or upload failed, reason: ${error}`);
+      setOpenErrorDialog(true);
+    }
+  };
+
   return (
     <Box sx={{ width: '100%', height: '100vh', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
       <Box sx={{ p: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <Typography variant="h6">Drag & Drop to upload</Typography>
-        <Button variant="contained" onClick={() => router.push('/list')} sx={{ ml: 2 }}>
-          <ArrowBackIcon /> Back to List
-        </Button>
+        <Typography variant="h6">Upload Transaction</Typography>
       </Box>
 
       {/* Display alert components for upload results */}
@@ -77,12 +104,12 @@ export default function TransactionUploadPage () {
       )}
 
       {/* Body - Drag and Drop Area */}
-      <Box sx={{ flexGrow: 1, display: 'flex', p: 3 }}>
+      <Box sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 3 }}>
         <Paper
           {...getRootProps()}
           sx={{
             width: '100%',
-            height: '80%',
+            height: '40%',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
@@ -95,6 +122,7 @@ export default function TransactionUploadPage () {
             '&:hover': {
               bgcolor: 'grey.50',
             },
+            mb: 3,
           }}
         >
           <input {...getInputProps()} />
@@ -105,6 +133,19 @@ export default function TransactionUploadPage () {
             Supported file types: JSON
           </Typography>
         </Paper>
+
+        <Typography variant="h6" gutterBottom>
+          Or paste your JSON here:
+        </Typography>
+        <JsonEditor value={jsonInput} onChange={setJsonInput} />
+        <Button
+          variant="contained"
+          onClick={handleJsonSubmit}
+          sx={{ mt: 2, alignSelf: 'flex-start' }}
+          disabled={!jsonInput.trim()}
+        >
+          Submit JSON
+        </Button>
       </Box>
 
       {/* Error Dialog */}

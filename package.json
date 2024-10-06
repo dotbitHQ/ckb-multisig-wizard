@@ -3,12 +3,13 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_ENV=development NODE_CONFIG_ENV=mainnet NODE_CONFIG_DIR=./config next dev",
+    "dev": "NODE_ENV=development NODE_CONFIG_ENV=testnet NODE_CONFIG_DIR=./config next dev",
     "build": "next build",
     "start": "NODE_ENV=production NODE_CONFIG_ENV=mainnet NODE_CONFIG_DIR=./config next start",
     "lint": "next lint"
   },
   "dependencies": {
+    "@codemirror/lang-json": "^6.0.1",
     "@ledgerhq/hw-transport": "^6.31.3",
     "@ledgerhq/hw-transport-webhid": "^6.29.3",
     "@ledgerhq/hw-transport-webusb": "^6.29.3",
@@ -23,6 +24,7 @@
     "@nervosnetwork/ckb-sdk-rpc": "^0.109.3",
     "@nervosnetwork/ckb-sdk-utils": "^0.109.3",
     "@nervosnetwork/ckb-types": "^0.109.3",
+    "@uiw/react-codemirror": "^4.23.5",
     "bech32": "^2.0.0",
     "bip32-path": "^0.4.2",
     "blake2b-wasm": "^2.4.0",
@@ -33,6 +35,7 @@
     "lowdb": "^7.0.1",
     "next": "14.2.13",
     "react": "^18",
+    "react-copy-to-clipboard": "^5.1.0",
     "react-dom": "^18",
     "react-dropzone": "^14.2.3",
     "winston": "^3.14.2"

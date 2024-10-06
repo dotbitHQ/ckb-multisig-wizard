@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Button, Link } from '@mui/material';
 import UploadIcon from '@mui/icons-material/Upload';
+import ListIcon from '@mui/icons-material/List';
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
@@ -42,7 +43,11 @@ export default function RootLayout({
                 🪄 CKB Multisig Wizard
               </Typography>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Button variant="contained" component={Link} href="/upload">
+                <Button sx={{ color: 'white' }} variant="text" component={Link} href="/list">
+                  <ListIcon sx={{ mr: 1 }} />
+                  Transactions
+                </Button>
+                <Button sx={{ ml: 2, color: 'white' }} variant="text" component={Link} href="/upload">
                   <UploadIcon sx={{ mr: 1 }} />
                   Upload Tx
                 </Button>

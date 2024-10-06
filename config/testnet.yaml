@@ -1,2 +1,8 @@
 ---
 env: testnet
+
+multisigScript:
+  - name: 'system-multisig'
+    typeId: '0x5c5069eb0857efc65e1bca0c07df34c31663b3622fd3876c876320fc9634e2a8'
+  - name: 'omni-lock-multisig'
+    typeId: '0xf329effd1c475a2978453c8600e1eaf0bc2087ee093c3ee64cc96ec6847752cb'

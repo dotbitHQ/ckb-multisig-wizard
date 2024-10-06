@@ -15,6 +15,7 @@ const nextConfig = {
         loglevel: config.loglevel,
         env: config.env,
 
+        multisigScript: config.multisigScript,
         users: config.users,
         multisigConfigs: config.multisigConfigs,
     },

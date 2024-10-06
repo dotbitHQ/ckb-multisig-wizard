@@ -5,6 +5,7 @@ import { scriptToAddress as ckbScriptToAddress } from '@nervosnetwork/ckb-sdk-ut
 import { ckbRpc } from './ckb'
 import { execSync } from "child_process";
 import rootLogger from '@/lib/log'
+import { MultisigType } from "./database";
 
 const logger = rootLogger.child({ route: 'util' });
 
@@ -81,4 +82,14 @@ export function pushTransactionByCkbCli(tx_file_path: string): string {
 export async function getTransactionStatus(tx_hash: string): Promise<CKBComponents.TransactionStatus | string> {
     const result = await ckbRpc.getTransaction(tx_hash)
     return result.txStatus.status
+}
+
+export function getMultisigScriptTypeByTypeId(typeId: string): MultisigType {
+    const multisigScript = config().multisigScript.find(script => script.typeId === typeId)
+
+    if (!multisigScript) {
+        return MultisigType.Unknown
+    }
+
+    return multisigScript.name as MultisigType
 }
