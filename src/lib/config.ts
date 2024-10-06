@@ -1,5 +1,10 @@
 import getConfig from 'next/config'
 
+export interface User {
+  name: string,
+  pubKeyHash: string,
+}
+
 export interface MultisigConfig {
   script: {
     code_hash: string,
@@ -26,6 +31,7 @@ export interface Config {
   env: string,
   loglevel: string,
 
+  users: User[]
   multisigConfigs: MultisigConfig[]
 }
 

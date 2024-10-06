@@ -15,8 +15,14 @@ const nextConfig = {
         loglevel: config.loglevel,
         env: config.env,
 
+        users: config.users,
         multisigConfigs: config.multisigConfigs,
     },
+    publicRuntimeConfig: {
+        env: config.env,
+
+        users: config.users,
+    }
 };
 
 export default nextConfig;

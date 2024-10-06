@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-
+import { Button, Link } from '@mui/material';
+import UploadIcon from '@mui/icons-material/Upload';
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
 import '@fontsource/roboto/500.css';
@@ -34,12 +35,18 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`} >
         <Box sx={{ width: '100%', maxWidth: '100%' }}>
-          {/* Sidebar */}
+          {/* Header */}
           <AppBar position="static" sx={{ mb: 2 }}>
-            <Toolbar sx={{ display: 'flex', alignItems: 'center', backgroundColor: 'var(--primary-color)' }}>
+            <Toolbar sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', backgroundColor: 'var(--primary-color)' }}>
               <Typography variant="h4" component="h1" sx={{ backgroundColor: 'var(--primary-color)', color: 'white' }}>
                 🪄 CKB Multisig Wizard
               </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <Button variant="contained" component={Link} href="/upload">
+                  <UploadIcon sx={{ mr: 1 }} />
+                  Upload Tx
+                </Button>
+              </Box>
             </Toolbar>
           </AppBar>
 

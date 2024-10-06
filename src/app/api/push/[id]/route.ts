@@ -1,7 +1,7 @@
 import getDb from "@/lib/database";
 import rootLogger from "@/lib/log";
 import { NextRequest, NextResponse } from "next/server";
-import * as util from '@/lib/util';
+import * as util from '@/lib/server-util';
 import fs from 'fs/promises';
 
 const route = '/api/push/[id]'

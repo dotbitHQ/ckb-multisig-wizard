@@ -3,6 +3,11 @@ import { JSONFilePreset } from 'lowdb/node';
 
 import config, { MultisigConfig } from './config'
 
+export enum MultisigType {
+  Default = 'system-multisig',
+  OmniLock = 'omni-lock-multisig',
+}
+
 export interface DbSignature {
   lock_args: string,
   signature: string,
@@ -12,13 +17,13 @@ export interface DbTransaction {
   id: string,
   tx_hash: string,
   signed: DbSignature[],
-  threshold: number,
   tx_json_path: string,
+  multisig_type: MultisigType,
   multisig_config: MultisigConfig,
   digest: string,
   description: string,
-  pushed_at: string | null,
   uploaded_at: string,
+  pushed_at: string | null,
 }
 
 export interface Schema {

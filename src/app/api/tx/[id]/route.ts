@@ -12,6 +12,12 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
     try {
         const db = await getDb();
         const tx = await db.getTx(id);
+        if (!tx) {
+            return NextResponse.json({
+                error: 'Transaction not found'
+            }, { status: 404 });
+        }
+
         return NextResponse.json({ result: tx }, { status: 200 });
     } catch (error) {
         logger.error('Error getting transaction:', error);
