@@ -42,6 +42,6 @@ export interface Config {
 }
 
 export default function config(): Config {
-  const { serverRuntimeConfig, _ } = getConfig()
+  const { serverRuntimeConfig } = getConfig()
   return serverRuntimeConfig
 }

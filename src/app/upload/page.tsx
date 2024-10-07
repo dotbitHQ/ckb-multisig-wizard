@@ -1,14 +1,12 @@
 "use client"
 
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useState, useEffect } from 'react';
 import { Box, Typography, Button, Paper, Dialog, DialogTitle, DialogContent, DialogActions, Alert, AlertTitle } from '@mui/material';
-import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import { useDropzone } from 'react-dropzone';
 import { useRouter } from 'next/navigation';
 import JsonEditor from '@/components/JsonEditor';
 
 export default function TransactionUploadPage () {
-  const router = useRouter();
   const [openErrorDialog, setOpenErrorDialog] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [uploadResults, setUploadResults] = useState<{ name: string; result: string }[]>([]);

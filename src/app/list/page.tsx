@@ -3,13 +3,9 @@
 import React, { useEffect, useState } from 'react';
 import { Grid2 as Grid, Snackbar, Alert } from '@mui/material';
 import { DbTransaction } from '@/lib/database';
-import TransportWebHID from "@ledgerhq/hw-transport-webhid";
-import TransportWebUSB from "@ledgerhq/hw-transport-webusb";
-import LedgerCkb from "@linkdesu/hw-app-ckb";
+import { getLedgerCkb } from '@/lib/ledger';
 import TransactionSidebar from './TransactionSidebar';
 import TransactionMain from './TransactionMain';
-
-let lckb: LedgerCkb | null = null;
 
 export default function Page() {
   const [transactions, setTransactions] = useState<DbTransaction[]>([]);
@@ -19,13 +15,18 @@ export default function Page() {
   const [successAlert, setSuccessAlert] = useState<string | null>(null);
   const [txStatus, setTxStatus] = useState<string | null>(null);
   const [openAlert, setOpenAlert] = useState(false);
-  const [ledgerLockArgs, setLedgerLockArgs] = useState<string | null>(null);
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [isPushingTx, setIsPushingTx] = useState(false);
 
   useEffect(() => {
     fetchTransactions();
   }, []);
+
+  useEffect(() => {
+    if (selectedTransaction) {
+      handleLoadStatus();
+    }
+  }, [selectedTransaction]);
 
   const fetchTransactions = async () => {
     try {
@@ -62,39 +63,30 @@ export default function Page() {
     }
 
     try {
-      const updatedTransaction = { ...selectedTransaction };
-      const newSignature = {
-        lock_args: selectedSighashAddress,
-        signature: signature.startsWith('0x') ? signature : `0x${signature}`
-      };
-
-      const existingSignatureIndex = updatedTransaction.signed.findIndex(sig => sig.lock_args === newSignature.lock_args);
-      if (existingSignatureIndex !== -1) {
-        updatedTransaction.signed[existingSignatureIndex] = newSignature;
-      } else {
-        updatedTransaction.signed.push(newSignature);
-      }
-
-      const response = await fetch(`/api/tx/${selectedTransaction.id}`, {
-        method: 'PUT',
+      const response = await fetch(`/api/tx/${selectedTransaction.id}/sign`, {
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(updatedTransaction),
+        body: JSON.stringify({
+          lock_args: selectedSighashAddress,
+          signature: signature
+        }),
       });
 
       if (!response.ok) {
         throw new Error('Server error');
       }
 
-      setSelectedTransaction(updatedTransaction);
+      const data = await response.json();
+      setSelectedTransaction(data.transaction);
       setTransactions(prevTransactions =>
         prevTransactions.map(tx =>
-          tx.id === updatedTransaction.id ? updatedTransaction : tx
+          tx.id === data.transaction.id ? data.transaction : tx
         )
       );
 
-      if (updatedTransaction.signed.length >= updatedTransaction.multisig_config.config.threshold) {
+      if (data.transaction.signed.length >= data.transaction.multisig_config.config.threshold && !data.transaction.pushed_at) {
         await handlePushTx();
       } else {
         setSuccessAlert('Signature submitted successfully');
@@ -112,25 +104,14 @@ export default function Page() {
     }
 
     try {
-      if (!lckb) {
-        let transport;
-        try {
-          transport = await TransportWebHID.create();
-        } catch (_) {
-          console.warn('Failed to connect with WebHID, try WebUSB...');
-          transport = await TransportWebUSB.create();
-        }
-        lckb = new LedgerCkb(transport);
-      }
-
+      const lckb = await getLedgerCkb();
       setOpenAlert(true);
 
       const keydata = await lckb.getWalletPublicKey("44'/309'/0'", false);
-      setLedgerLockArgs(keydata.lockArg);
-
       const signature = await lckb.signMessageHash("44'/309'/0'", selectedTransaction.digest.replace(/^0x/, ''));
+      const lockArgs = keydata.lockArg.startsWith('0x') ? keydata.lockArg : `0x${keydata.lockArg}`;
 
-      await handleSignatureSubmit(signature, keydata.lockArg);
+      await handleSignatureSubmit(signature, lockArgs);
 
       if (selectedTransaction.signed.length >= selectedTransaction.multisig_config.config.threshold) {
         await handlePushTx();
@@ -140,17 +121,10 @@ export default function Page() {
     } catch (error) {
       console.error('Error signing with ledger:', error);
       setErrorAlert(`Error signing with ledger: ${error}`);
-      setLedgerLockArgs(null);
     } finally {
       setOpenAlert(false);
     }
   };
-
-  useEffect(() => {
-    if (selectedTransaction) {
-      handleLoadStatus();
-    }
-  }, [selectedTransaction]);
 
   const handleLoadStatus = async () => {
     if (!selectedTransaction || isLoadingStatus) {
