@@ -3,11 +3,10 @@ import config from '@/lib/config';
 import { cookies } from 'next/headers';
 import rootLogger from '@/lib/log';
 
-const route = '/api/auth';
 const logger = rootLogger.child({ route: '/api/auth' });
 
 export async function POST(request: NextRequest) {
-  logger.debug(`POST ${route}`)
+  logger.debug(`POST ${request.nextUrl.pathname}${request.nextUrl.search}`);
 
   const verifyOnly = request.nextUrl.searchParams.get('verify') === 'true';
   const { pubKeyHash } = await request.json();
