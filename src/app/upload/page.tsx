@@ -1,9 +1,8 @@
 "use client"
 
-import React, { useCallback, useState, useEffect } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Box, Typography, Button, Paper, Dialog, DialogTitle, DialogContent, DialogActions, Alert, AlertTitle } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
-import { useRouter } from 'next/navigation';
 import JsonEditor from '@/components/JsonEditor';
 
 export default function TransactionUploadPage () {

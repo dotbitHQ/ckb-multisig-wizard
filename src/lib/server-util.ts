@@ -1,6 +1,6 @@
 import { MultisigConfig } from "@/lib/config";
 import config from "@/lib/config";
-import { rawTransactionToHash, systemScripts } from '@nervosnetwork/ckb-sdk-utils';
+import { rawTransactionToHash } from '@nervosnetwork/ckb-sdk-utils';
 import { scriptToAddress as ckbScriptToAddress } from '@nervosnetwork/ckb-sdk-utils'
 import { ckbRpc } from './ckb'
 import { execSync } from "child_process";

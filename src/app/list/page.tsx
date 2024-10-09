@@ -19,14 +19,15 @@ export default function Page() {
   const [isPushingTx, setIsPushingTx] = useState(false);
 
   useEffect(() => {
-    fetchTransactions();
-  }, []);
-
-  useEffect(() => {
     if (selectedTransaction) {
       handleLoadStatus();
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTransaction]);
+
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
 
   const fetchTransactions = async () => {
     try {
@@ -41,6 +42,30 @@ export default function Page() {
       console.error('Error fetching transactions:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLoadStatus = async () => {
+    if (!selectedTransaction || isLoadingStatus) {
+      return;
+    }
+
+    console.log(`Loading status for transaction: ${selectedTransaction.id}`);
+
+    setIsLoadingStatus(true);
+
+    try {
+      const response = await fetch(`/api/tx/${selectedTransaction.id}/status`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch transaction status');
+      }
+      const data = await response.json();
+      setTxStatus(data.status);
+    } catch (error) {
+      console.error('Error loading transaction status:', error);
+      setErrorAlert(`Error loading transaction status: ${error}`);
+    } finally {
+      setIsLoadingStatus(false);
     }
   };
 
@@ -123,28 +148,6 @@ export default function Page() {
       setErrorAlert(`Error signing with ledger: ${error}`);
     } finally {
       setOpenAlert(false);
-    }
-  };
-
-  const handleLoadStatus = async () => {
-    if (!selectedTransaction || isLoadingStatus) {
-      return;
-    }
-
-    setIsLoadingStatus(true);
-
-    try {
-      const response = await fetch(`/api/tx/${selectedTransaction.id}/status`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch transaction status');
-      }
-      const data = await response.json();
-      setTxStatus(data.status);
-    } catch (error) {
-      console.error('Error loading transaction status:', error);
-      setErrorAlert(`Error loading transaction status: ${error}`);
-    } finally {
-      setIsLoadingStatus(false);
     }
   };
 

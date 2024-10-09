@@ -1,9 +1,9 @@
 import path from 'path';
 import { writeFile, mkdir } from 'fs/promises';
 import { NextRequest, NextResponse } from "next/server";
-import config from '@/lib/config'
+import config, { MultisigConfig } from '@/lib/config'
 import rootLogger from '@/lib/log'
-import getDb, { Database } from '@/lib/database'
+import getDb, { Database, } from '@/lib/database'
 import * as util from '@/lib/server-util';
 import { formatInTimeZone } from 'date-fns-tz';
 
@@ -118,7 +118,7 @@ export async function POST (req: NextRequest) {
   }
 }
 
-async function writeTxToDb(db: Database, ckb_cli_tx: any, filePath: string, multisigConfig: any) {
+async function writeTxToDb(db: Database, ckb_cli_tx: TxHelper, filePath: string, multisigConfig: MultisigConfig) {
   const tx_hash = util.calcTxHash(ckb_cli_tx)
   const description = util.calcTxDescription(process.env.NEXT_PUBLIC_ENV!, filePath)
   // Convert multisigConfig.script to ckb address

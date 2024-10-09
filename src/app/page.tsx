@@ -1,28 +1,22 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { Box, Typography, Button, CircularProgress, Alert, Snackbar, TextField } from '@mui/material';
+import React, { useState, Suspense } from 'react';
+import { Box, Typography, Button, CircularProgress, TextField } from '@mui/material';
 import GitHubIcon from '@mui/icons-material/GitHub';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { getLedgerCkb } from '@/lib/ledger';
 import { useAuth } from '@/contexts/AuthContext';
+import dynamic from 'next/dynamic';
+
+const LoginAlert = dynamic(() => import('../components/LoginAlert'), { ssr: false });
 
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { pubKeyHash, setPubKeyHash } = useAuth();
 
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [manualPubKeyHash, setManualPubKeyHash] = useState('');
-
-  useEffect(() => {
-    const error = searchParams.get('error');
-    if (error) {
-      setErrorAlert(error);
-    }
-  }, [searchParams]);
-
 
   const trySignIn = async (pubKeyHash: string) => {
     const response = await fetch('/api/auth', {
@@ -64,7 +58,7 @@ export default function LoginPage() {
     }
 
     try {
-      console.log('Signed in with ledger, pubkey hash:', manualPubKeyHash);
+      console.log('Signed in with manual pubkey hash:', manualPubKeyHash);
 
       await trySignIn(manualPubKeyHash);
     } catch (error) {
@@ -160,15 +154,9 @@ export default function LoginPage() {
         </Typography>
       </Box>
 
-      <Snackbar
-        open={!!errorAlert}
-        onClose={() => setErrorAlert(null)}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-      >
-        <Alert onClose={() => setErrorAlert(null)} severity="error" sx={{ width: '100%' }}>
-          {errorAlert}
-        </Alert>
-      </Snackbar>
+      <Suspense fallback={<div>Loading...</div>}>
+        <LoginAlert message={errorAlert} onOpen={setErrorAlert} onClose={() => setErrorAlert(null)} />
+      </Suspense>
     </Box>
   );
 }

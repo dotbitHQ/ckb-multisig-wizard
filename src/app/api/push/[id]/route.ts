@@ -29,7 +29,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         }
 
         // Check if the transaction has enough signatures
-        if (transaction.signed.length < transaction.threshold) {
+        if (transaction.signed.length < transaction.multisig_config.config.threshold) {
             return NextResponse.json({
                 error: 'Not enough signatures to push the transaction'
             }, { status: 400 });
