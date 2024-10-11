@@ -61,17 +61,17 @@ export default function TransactionMain({
 
   const getStatusChipColor = (status: string) => {
     switch (status) {
-      case 'committed':
-        return 'success';
-      case 'pending':
-        return 'warning';
-      case 'proposed':
-        return 'info';
-      case 'unknown':
-      case 'rejected':
-        return 'error';
-      default:
-        return 'default';
+    case 'committed':
+      return 'success';
+    case 'pending':
+      return 'warning';
+    case 'proposed':
+      return 'info';
+    case 'unknown':
+    case 'rejected':
+      return 'error';
+    default:
+      return 'default';
     }
   };
 

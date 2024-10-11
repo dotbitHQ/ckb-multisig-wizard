@@ -6,20 +6,17 @@ import rootLogger from '@/lib/log'
 import getDb, { Database, } from '@/lib/database'
 import * as util from '@/lib/server-util';
 import { formatInTimeZone } from 'date-fns-tz';
+import { validateSignInStatus } from '@/lib/server-auth';
 
 const route = '/api/upload/file'
 const logger = rootLogger.child({ route });
 
-export async function GET (_: NextRequest) {
-  logger.debug(`GET ${route}`)
-
-  return NextResponse.json({
-    response_from: route
-  })
-}
-
 export async function POST (req: NextRequest) {
   logger.debug(`POST ${route}`)
+  const res = validateSignInStatus(req);
+  if (res) {
+    return res;
+  }
 
   const db = await getDb();
   const txDir = path.resolve(config().transactionsDir)
@@ -50,43 +47,61 @@ export async function POST (req: NextRequest) {
     if (jsonContent) {
       // Process JSON content
       const ckb_cli_tx = JSON.parse(jsonContent);
-      const tx_hash = util.calcTxHash(ckb_cli_tx)
-      const fileName = `${tx_hash}.json`;
-      const filePath = path.join(dirPath, fileName);
-      await writeFile(filePath, jsonContent);
 
-      logger.info(`New transaction JSON content uploaded to ${filePath}`)
-
-      const multisigConfig = util.findMultisigConfigByTx(ckb_cli_tx)
-
-      if (multisigConfig) {
-        logger.info(`Found known multisig config in ${filePath}`)
-
-        await writeTxToDb(db, ckb_cli_tx, filePath, multisigConfig)
-
+      if (!util.validateTxFormat(ckb_cli_tx)) {
         result.push({
-          name: tx_hash,
-          result: 'success',
+          name: 'jsonContent',
+          result: 'Invalid transaction data, only ckb-cli format is supported.',
         })
+
       } else {
-        logger.info(`Can not find known multisig config in ${filePath}`)
+        const tx_hash = util.calcTxHash(ckb_cli_tx)
+        const fileName = `${tx_hash}.json`;
+        const filePath = path.join(dirPath, fileName);
+        await writeFile(filePath, jsonContent);
 
-        result.push({
-          name: fileName,
-          result: 'Can not find multisig config or the multisig config is unknown.',
-        })
+        logger.info(`New transaction JSON content uploaded to ${filePath}`)
+
+        const multisigConfig = util.findMultisigConfigByTx(ckb_cli_tx)
+
+        if (multisigConfig) {
+          logger.info(`Found known multisig config in ${filePath}`)
+
+          await writeTxToDb(db, ckb_cli_tx, filePath, multisigConfig)
+
+          result.push({
+            name: tx_hash,
+            result: 'success',
+          })
+        } else {
+          logger.info(`Can not find known multisig config in ${filePath}`)
+
+          result.push({
+            name: fileName,
+            result: 'Can not find multisig config or the multisig config is unknown.',
+          })
+        }
       }
     } else {
       // Process files
       for (const file of files) {
         const filePath = path.join(dirPath, file.name);
         const fileBuffer = Buffer.from(await file.arrayBuffer());
+        const ckb_cli_tx = JSON.parse(fileBuffer.toString());
+
+        if (!util.validateTxFormat(ckb_cli_tx)) {
+          result.push({
+            name: file.name,
+            result: 'Invalid transaction data, only ckb-cli format is supported.',
+          })
+          continue;
+        }
+
         await writeFile(filePath, fileBuffer);
 
         logger.info(`New transaction json file uploaded to ${filePath}`)
 
         // Read json from file, try to find known multisig config in it.
-        const ckb_cli_tx = JSON.parse(fileBuffer.toString())
         const multisigConfig = util.findMultisigConfigByTx(ckb_cli_tx)
 
         if (multisigConfig) {
@@ -112,9 +127,9 @@ export async function POST (req: NextRequest) {
     // Return a success response
     return NextResponse.json({ result }, { status: 201 });
   } catch (error) {
-    logger.error(`Failed to upload file or process JSON: ${error}`);
+    logger.error(`${error}`);
 
-    return NextResponse.json({ error: "Failed to upload file or process JSON" }, { status: 500 });
+    return NextResponse.json({ error:`${error}` }, { status: 500 });
   }
 }
 

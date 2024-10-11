@@ -36,14 +36,14 @@ export default function SignerList({ sighash_addresses, users }: SignerProps) {
             <ListItemButton sx={{ pl: 0 }} onClick={() => handleClick(signerName)}>
               <ListItem disablePadding>
                 <ListItemText primary={
-                      <Typography sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
-                        {signerName}
-                      </Typography>
-                    } secondary={
-                      <Typography sx={{ fontFamily: 'monospace' }}>
-                        {pubkey_hash}
-                      </Typography>
-                    } />
+                  <Typography sx={{ fontWeight: 'bold', fontFamily: 'monospace' }}>
+                    {signerName}
+                  </Typography>
+                } secondary={
+                  <Typography sx={{ fontFamily: 'monospace' }}>
+                    {pubkey_hash}
+                  </Typography>
+                } />
                 {open[signerName] ? <ExpandLess /> : <ExpandMore />}
               </ListItem>
             </ListItemButton>

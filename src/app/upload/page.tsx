@@ -29,8 +29,8 @@ export default function TransactionUploadPage () {
         console.log('Upload successful(some tx may contains error message):', data);
         setUploadResults(data.result);
       } else {
-        console.error('Upload failed with unexpected server error');
-        setErrorMessage(`Upload failed with unexpected server error`);
+        console.error(`Upload failed: ${data.error}`);
+        setErrorMessage(`Upload failed: ${data.error}`);
         setOpenErrorDialog(true);
       }
 

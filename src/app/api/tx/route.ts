@@ -1,28 +1,34 @@
 import getDb from "@/lib/database";
 import rootLogger from "@/lib/log";
 import { NextRequest, NextResponse } from "next/server";
+import { validateSignInStatus } from "@/lib/server-auth";
 
 const route = '/api/tx'
 const logger = rootLogger.child({ route });
 
-export async function GET(_: NextRequest) {
-    logger.debug(`GET ${route}`)
+export async function GET(req: NextRequest) {
+  const res = validateSignInStatus(req);
+  if (res) {
+    return res;
+  }
 
-    const db = await getDb();
+  logger.debug(`GET ${route}`)
 
-    try {
-        const transactions = await db.getAllTx();
+  const db = await getDb();
 
-        return NextResponse.json({
-            result: transactions
-        }, { status: 200 });
+  try {
+    const transactions = await db.getAllTx();
 
-    } catch (error) {
-        logger.error('Error fetching transactions:', error);
+    return NextResponse.json({
+      result: transactions
+    }, { status: 200 });
 
-        // Return an error response
-        return NextResponse.json({
-            error: 'Failed to fetch transactions'
-        }, { status: 500 });
-    }
+  } catch (error) {
+    logger.error('Error fetching transactions:', error);
+
+    // Return an error response
+    return NextResponse.json({
+      error: 'Failed to fetch transactions'
+    }, { status: 500 });
+  }
 }

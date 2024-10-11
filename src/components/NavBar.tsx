@@ -51,14 +51,14 @@ const NavBar: React.FC = () => {
         </Link>
         {pubKeyHash && (
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <Button sx={{ color: 'white' }} variant="text" component={Link} href="/list">
-            <ListIcon sx={{ mr: 1 }} />
+            <Button sx={{ color: 'white' }} variant="text" component={Link} href="/list">
+              <ListIcon sx={{ mr: 1 }} />
             Transactions
-          </Button>
-          <Button sx={{ ml: 2, color: 'white' }} variant="text" component={Link} href="/upload">
-            <UploadIcon sx={{ mr: 1 }} />
+            </Button>
+            <Button sx={{ ml: 2, color: 'white' }} variant="text" component={Link} href="/upload">
+              <UploadIcon sx={{ mr: 1 }} />
             Upload Tx
-          </Button>
+            </Button>
             <Button
               sx={{ ml: 2, color: 'white' }}
               onClick={handleOpenPopover}

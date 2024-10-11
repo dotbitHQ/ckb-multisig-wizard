@@ -3,15 +3,15 @@ import config from '@/lib/config';
 import { cookies } from 'next/headers';
 import rootLogger from '@/lib/log';
 
-const logger = rootLogger.child({ route: '/api/auth' });
+const route = '/api/auth'
+const logger = rootLogger.child({ route });
 
 export async function POST(request: NextRequest) {
-  logger.debug(`POST ${request.nextUrl.pathname}${request.nextUrl.search}`);
+  logger.debug(`POST ${route}`);
 
   const verifyOnly = request.nextUrl.searchParams.get('verify') === 'true';
   const { pubKeyHash } = await request.json();
   const users = config().users.map(user => user.pubKeyHash);
-
 
   if (!users.includes(pubKeyHash)) {
     logger.warn(`User ${pubKeyHash} not found`);

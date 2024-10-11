@@ -14,7 +14,7 @@ const LoginAlert: React.FC<LoginAlertProps> = ({ message, onOpen, onClose }) => 
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    const error = searchParams.get('error');
+    const error = searchParams?.get('error');
     if (error) {
       onOpen(error);
     }

@@ -165,7 +165,7 @@ export default function Page() {
     setIsPushingTx(true);
 
     try {
-      const response = await fetch(`/api/push/${selectedTransaction.id}`, {
+      const response = await fetch(`/api/tx/${selectedTransaction.id}/push`, {
         method: 'POST',
       });
       const data = await response.json();
