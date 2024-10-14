@@ -61,23 +61,29 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
     // Push the transaction to the CKB network
     try {
-      const output = util.pushTransactionByCkbCli(transaction.tx_json_path)
+      const { stderr } = util.pushTransactionByCkbCli(transaction.tx_json_path)
 
-      if (output.includes('error')) {
-        return NextResponse.json({
-          error: output,
-        }, { status: 400 });
-      } else {
+      if (stderr === '') {
         // Update the transaction in the database
         transaction.pushed_at = new Date().toISOString();
         await db.updateTx(transaction);
 
+        logger.info(`Transaction pushed: ${transaction.tx_hash}`);
         return NextResponse.json({
           result: 'Transaction pushed successfully',
         }, { status: 200 });
+      } else {
+        // Update the transaction in the database
+        transaction.rejected_at = new Date().toISOString();
+        transaction.reject_reason = stderr;
+        await db.updateTx(transaction);
+
+        logger.error(`Transaction rejected: ${transaction.tx_hash}, reason: ${stderr}`);
+        return NextResponse.json({
+          error: stderr,
+        }, { status: 400 });
       }
-    } catch (error) {
-      logger.error('Error pushing transaction to CKB network:', error);
+    } catch (error: any) {
       return NextResponse.json({
         error: `Failed to push transaction to CKB network: ${error}`
       }, { status: 500 });

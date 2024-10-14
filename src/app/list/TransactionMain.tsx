@@ -63,13 +63,12 @@ export default function TransactionMain({
     switch (status) {
     case 'committed':
       return 'success';
-    case 'pending':
-      return 'warning';
     case 'proposed':
-      return 'info';
-    case 'unknown':
+    case 'pending':
+      return 'default';
     case 'rejected':
       return 'error';
+    case 'unknown':
     default:
       return 'default';
     }
@@ -229,6 +228,26 @@ export default function TransactionMain({
           </TableBody>
         </Table>
       </TableContainer>
+
+      {/* Reject Reason */}
+      {tx.rejected_at && (<TableContainer component={Paper} sx={{ mb: 4 }}>
+        <Table sx={{ tableLayout: 'fixed' }}>
+          <TableHead>
+            <TableRow>
+              <TableCell colSpan={2}>
+                <Typography variant="h6" sx={{ color: 'error.main' }}>
+                  Reject Reason
+                </Typography>
+              </TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            <TableRow>
+              <TableCell><pre style={{ fontFamily: 'monospace', margin: 0, width: '100%', textWrap: 'balance' }}>{tx.reject_reason}</pre></TableCell>
+            </TableRow>
+          </TableBody>
+        </Table>
+      </TableContainer>)}
 
       {/* Manual Signature Submission Form */}
       <Paper sx={{ p: 2, mb: 2 }}>

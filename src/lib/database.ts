@@ -25,6 +25,9 @@ export interface DbTransaction {
   description: string,
   uploaded_at: string,
   pushed_at: string | null,
+  committed_at: string | null,
+  rejected_at: string | null,
+  reject_reason: string | null,
 }
 
 export interface Schema {

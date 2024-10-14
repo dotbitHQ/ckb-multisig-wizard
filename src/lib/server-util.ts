@@ -8,8 +8,29 @@ import { ckbRpc } from './ckb'
 import { execSync } from "child_process";
 import rootLogger from '@/lib/log'
 import { MultisigType } from "./database";
+import { ExecSyncOptionsWithStringEncoding } from 'child_process';
 
 const logger = rootLogger.child({ route: 'util' });
+
+function executeCommand(cmd: string): { stdout: string; stderr: string } {
+  try {
+    const options: ExecSyncOptionsWithStringEncoding = {
+      cwd: process.cwd(),
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe']
+    };
+    const stdout = execSync(cmd, options);
+    return { stdout: stdout.toString(), stderr: '' };
+  } catch (error) {
+    if (error instanceof Error && 'stderr' in error) {
+      return {
+        stdout: '',
+        stderr: (error as any).stderr.toString()
+      };
+    }
+    throw error;
+  }
+}
 
 export function validateTxFormat(ckb_cli_tx: TxHelper): boolean {
   return !!ckb_cli_tx.multisig_configs && !!ckb_cli_tx.transaction
@@ -48,24 +69,18 @@ export function calcTxHash(ckb_cli_tx: TxHelper): string {
   return txHash;
 }
 
-export function calcTxDescription(env: string, tx_file_path: string): string {
+export function calcTxDescription(env: string, tx_file_path: string): { stdout: string; stderr: string } {
   const bin = config().toolboxCliBin;
-
   const cmd = `${bin} sandbox ${env === 'mainnet' ? '' : '-t'} -p ${tx_file_path}`;
-  logger.debug(`Execute command: ${cmd}`)
-  const result = execSync(cmd, { cwd: process.cwd() });
-
-  return result.toString();
+  logger.debug(`Execute command: ${cmd}`);
+  return executeCommand(cmd);
 }
 
-export function calcTxDigest(address: string, tx_file_path: string): string {
+export function calcTxDigest(address: string, tx_file_path: string): { stdout: string; stderr: string } {
   const bin = config().toolboxCliBin;
-
   const cmd = `${bin} tx get-digest --format ckb-cli -a ${address} -t ${tx_file_path}`;
-  logger.debug(`Execute command: ${cmd}`)
-  const result = execSync(cmd, { cwd: process.cwd() });
-
-  return result.toString();
+  logger.debug(`Execute command: ${cmd}`);
+  return executeCommand(cmd);
 }
 
 export function scriptToAddress(script: RPC.Script, env: string = 'mainnet'): string {
@@ -75,19 +90,28 @@ export function scriptToAddress(script: RPC.Script, env: string = 'mainnet'): st
   return address
 }
 
-export function pushTransactionByCkbCli(tx_file_path: string): string {
+export function pushTransactionByCkbCli(tx_file_path: string): { stdout: string; stderr: string } {
   const bin = config().ckbCliBin;
-
   const cmd = `${bin} tx send --skip-check --local-only --tx-file ${tx_file_path}`;
-  logger.debug(`Execute command: ${cmd}`)
-  const result = execSync(cmd, { cwd: process.cwd() });
-
-  return result.toString();
+  logger.debug(`Execute command: ${cmd}`);
+  return executeCommand(cmd);
 }
 
-export async function getTransactionStatus(tx_hash: string): Promise<CKBComponents.TransactionStatus | string> {
+export async function getTransactionStatus(tx_hash: string): Promise<{ status: CKBComponents.TransactionStatus | string, committed_at: Date | null }> {
   const result = await ckbRpc.getTransaction(tx_hash)
-  return result.txStatus.status
+  if (result.txStatus.status === 'committed') {
+    const block = await ckbRpc.getBlock(result.txStatus.blockHash)
+    const timestamp = parseInt(block.header.timestamp, 16);
+    return {
+      status: result.txStatus.status,
+      committed_at: new Date(timestamp)
+    }
+  } else {
+    return {
+      status: result.txStatus.status,
+      committed_at: null
+    }
+  }
 }
 
 export function getMultisigScriptTypeByTypeId(typeId: string): MultisigType {

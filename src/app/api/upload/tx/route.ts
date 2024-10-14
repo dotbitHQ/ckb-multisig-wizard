@@ -135,10 +135,21 @@ export async function POST (req: NextRequest) {
 
 async function writeTxToDb(db: Database, ckb_cli_tx: TxHelper, filePath: string, multisigConfig: MultisigConfig) {
   const tx_hash = util.calcTxHash(ckb_cli_tx)
-  const description = util.calcTxDescription(process.env.NEXT_PUBLIC_ENV!, filePath)
   // Convert multisigConfig.script to ckb address
   const address = util.scriptToAddress(multisigConfig.script, config().env)
-  const digest = util.calcTxDigest(address, filePath)
+
+  const { stdout: description, stderr: descriptionError } = util.calcTxDescription(process.env.NEXT_PUBLIC_ENV!, filePath)
+  if (descriptionError) {
+    logger.error(`Failed to calculate transaction description: ${descriptionError}`);
+    throw new Error(descriptionError);
+  }
+
+  const { stdout: digest, stderr: digestError } = util.calcTxDigest(address, filePath)
+  if (digestError) {
+    logger.error(`Failed to calculate transaction digest: ${digestError}`);
+    throw new Error(digestError);
+  }
+
   const multisigType = util.getMultisigScriptTypeByTypeId(multisigConfig.script.code_hash)
 
   await db.replaceInsertTx({
@@ -152,5 +163,8 @@ async function writeTxToDb(db: Database, ckb_cli_tx: TxHelper, filePath: string,
     description,
     uploaded_at: new Date().toISOString(),
     pushed_at: null,
+    committed_at: null,
+    rejected_at: null,
+    reject_reason: null,
   })
 }

@@ -26,12 +26,19 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
       }, { status: 404 });
     }
 
-    const status = await util.getTransactionStatus(transaction.tx_hash);
+    const { status, committed_at } = await util.getTransactionStatus(transaction.tx_hash);
+
+    if (status === 'committed') {
+      transaction.committed_at = committed_at!.toISOString();
+      await db.updateTx(transaction);
+    } else if (status === 'rejected') {
+      transaction.rejected_at = new Date().toISOString();
+      await db.updateTx(transaction);
+    }
 
     return NextResponse.json({
       status: status
     }, { status: 200 });
-
   } catch (error) {
     logger.error('Error fetching transaction status:', error);
 

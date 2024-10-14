@@ -23,7 +23,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setPubKeyHash(storedPubKeyHash);
-  }, []);
+  }, [router, pathname]);
 
   return (
     <AuthContext.Provider value={{ pubKeyHash, setPubKeyHash }}>

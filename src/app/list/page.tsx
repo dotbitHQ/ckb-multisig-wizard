@@ -20,7 +20,13 @@ export default function Page() {
 
   useEffect(() => {
     if (selectedTransaction) {
-      handleLoadStatus();
+      if (selectedTransaction.committed_at) {
+        setTxStatus('committed');
+      } else if (selectedTransaction.rejected_at) {
+        setTxStatus('rejected');
+      } else {
+        handleLoadStatus();
+      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTransaction]);
@@ -28,6 +34,22 @@ export default function Page() {
   useEffect(() => {
     fetchTransactions();
   }, []);
+
+  const fetchTransaction = async (id: string) => {
+    try {
+      const response = await fetch(`/api/tx/${id}`);
+      const data = await response.json();
+      setTransactions(prevTransactions =>
+        prevTransactions.map(tx =>
+          tx.id === data.result.id ? data.result : tx
+        )
+      );
+      return data.result;
+    } catch (error) {
+      console.error('Error fetching transaction:', error);
+      return null;
+    }
+  }
 
   const fetchTransactions = async () => {
     try {
@@ -61,6 +83,7 @@ export default function Page() {
       }
       const data = await response.json();
       setTxStatus(data.status);
+      fetchTransaction(selectedTransaction.id);
     } catch (error) {
       console.error('Error loading transaction status:', error);
       setErrorAlert(`Error loading transaction status: ${error}`);
@@ -72,9 +95,8 @@ export default function Page() {
   const handleSelectTransaction = async (id: string) => {
     console.info(`Selected transaction: ${id}`);
     try {
-      const response = await fetch(`/api/tx/${id}`);
-      const data = await response.json();
-      setSelectedTransaction(data.result);
+      const tx = await fetchTransaction(id);
+      setSelectedTransaction(tx);
     } catch (error) {
       console.error('Error fetching transaction:', error);
       setErrorAlert(`Error fetching transaction: ${error}`);
