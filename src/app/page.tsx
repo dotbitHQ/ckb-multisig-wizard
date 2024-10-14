@@ -79,6 +79,7 @@ export default function LoginPage() {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
+        overflow: 'hidden',
       }}
     >
       <Box
