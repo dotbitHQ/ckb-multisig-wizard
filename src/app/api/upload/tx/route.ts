@@ -7,6 +7,7 @@ import getDb, { Database, } from '@/lib/database'
 import * as util from '@/lib/server-util';
 import { formatInTimeZone } from 'date-fns-tz';
 import { validateSignInStatus } from '@/lib/server-auth';
+import fs from 'fs';
 
 const route = '/api/upload/file'
 const logger = rootLogger.child({ route });
@@ -48,16 +49,29 @@ export async function POST (req: NextRequest) {
       // Process JSON content
       const ckb_cli_tx = JSON.parse(jsonContent);
 
+      let writeToDb = true
       if (!util.validateTxFormat(ckb_cli_tx)) {
         result.push({
-          name: 'jsonContent',
+          name: 'Transaction JSON',
           result: 'Invalid transaction data, only ckb-cli format is supported.',
         })
+        writeToDb = false
+      }
 
-      } else {
-        const tx_hash = util.calcTxHash(ckb_cli_tx)
+      const tx_hash = util.calcTxHash(ckb_cli_tx)
+      const existingTx = await db.getTxByTxHash(tx_hash)
+      if (existingTx) {
+        result.push({
+          name: 'Transaction JSON',
+          result: `Transaction already uploaded to ${existingTx.tx_json_path.split('/').slice(-2).join('/')}.`,
+        })
+        writeToDb = false
+      }
+
+      if (writeToDb) {
         const fileName = `${tx_hash}.json`;
         const filePath = path.join(dirPath, fileName);
+
         await writeFile(filePath, jsonContent);
 
         logger.info(`New transaction JSON content uploaded to ${filePath}`)
@@ -85,9 +99,20 @@ export async function POST (req: NextRequest) {
     } else {
       // Process files
       for (const file of files) {
-        const filePath = path.join(dirPath, file.name);
         const fileBuffer = Buffer.from(await file.arrayBuffer());
         const ckb_cli_tx = JSON.parse(fileBuffer.toString());
+
+        const tx_hash = util.calcTxHash(ckb_cli_tx)
+        const existingTx = await db.getTxByTxHash(tx_hash)
+        if (existingTx) {
+          result.push({
+            name: file.name,
+            result: `Transaction already uploaded to ${existingTx.tx_json_path.split('/').slice(-2).join('/')}.`,
+          })
+          continue
+        }
+
+        const filePath = path.join(dirPath, file.name);
 
         if (!util.validateTxFormat(ckb_cli_tx)) {
           result.push({

@@ -58,6 +58,11 @@ export class Database {
     return this.db.data.tx.find(transaction => transaction.id === id);
   }
 
+  async getTxByTxHash(txHash: string): Promise<DbTransaction | undefined> {
+    await this.db.read()
+    return this.db.data.tx.find(transaction => transaction.tx_hash === txHash);
+  }
+
   async getAllTx(): Promise<DbTransaction[]> {
     await this.db.read()
     return this.db.data.tx;

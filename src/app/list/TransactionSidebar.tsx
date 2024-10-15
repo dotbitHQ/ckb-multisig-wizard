@@ -41,7 +41,7 @@ export default function TransactionSidebar({ transactions, loading, onSelectTran
           status = 'committed';
         } else {
           if (pubKeyHash && tx.multisig_config.config.sighash_addresses.includes(pubKeyHash)) {
-            if (tx.signed.some(sig => sig.lock_args === pubKeyHash)) {
+            if (tx.signed.length >= tx.multisig_config.config.threshold || tx.signed.some(sig => sig.lock_args === pubKeyHash)) {
               status = 'signed';
             } else {
               status = 'unsigned';
