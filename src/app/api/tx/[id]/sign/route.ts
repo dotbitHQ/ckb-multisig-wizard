@@ -17,7 +17,11 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   try {
     const db = await getDb();
-    const { lock_args, signature } = await req.json();
+    let { lock_args, signature } = await req.json();
+
+    if (!signature.startsWith("0x")) {
+      signature = `0x${signature}`;
+    }
 
     // Fetch the current transaction
     const tx = await db.getTx(id);

@@ -155,8 +155,12 @@ export default function Page() {
       setOpenAlert(true);
 
       const keydata = await lckb.getWalletPublicKey("44'/309'/0'", false);
-      const signature = await lckb.signMessageHash("44'/309'/0'", selectedTransaction.digest.replace(/^0x/, ''));
+      let signature = await lckb.signMessageHash("44'/309'/0'", selectedTransaction.digest.replace(/^0x/, ''));
       const lockArgs = keydata.lockArg.startsWith('0x') ? keydata.lockArg : `0x${keydata.lockArg}`;
+
+      if (!signature.startsWith("0x")) {
+        signature = `0x${signature}`;
+      }
 
       await handleSignatureSubmit(signature, lockArgs);
 
