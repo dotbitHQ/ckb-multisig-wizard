@@ -1,13 +1,12 @@
 import path from 'path';
 import { writeFile, mkdir } from 'fs/promises';
 import { NextRequest, NextResponse } from "next/server";
-import config, { MultisigConfig } from '@/lib/config'
+import config, { MultisigConfig, User } from '@/lib/config'
 import rootLogger from '@/lib/log'
 import getDb, { Database, } from '@/lib/database'
 import * as util from '@/lib/server-util';
 import { formatInTimeZone } from 'date-fns-tz';
-import { validateSignInStatus } from '@/lib/server-auth';
-import fs from 'fs';
+import { getSignInUser, validateSignInStatus } from '@/lib/server-auth';
 
 const route = '/api/upload/file'
 const logger = rootLogger.child({ route });
@@ -43,12 +42,12 @@ export async function POST (req: NextRequest) {
     const dirPath = path.join(txDir, date);
     await mkdir(dirPath, { recursive: true });
 
+    const user = getSignInUser();
     const result = []
 
     if (jsonContent) {
       // Process JSON content
       const ckb_cli_tx = JSON.parse(jsonContent);
-
       let writeToDb = true
       if (!util.validateTxFormat(ckb_cli_tx)) {
         result.push({
@@ -81,7 +80,7 @@ export async function POST (req: NextRequest) {
         if (multisigConfig) {
           logger.info(`Found known multisig config in ${filePath}`)
 
-          await writeTxToDb(db, ckb_cli_tx, filePath, multisigConfig)
+          await writeTxToDb(db, ckb_cli_tx, filePath, multisigConfig, user)
 
           result.push({
             name: tx_hash,
@@ -101,6 +100,13 @@ export async function POST (req: NextRequest) {
       for (const file of files) {
         const fileBuffer = Buffer.from(await file.arrayBuffer());
         const ckb_cli_tx = JSON.parse(fileBuffer.toString());
+        if (!util.validateTxFormat(ckb_cli_tx)) {
+          result.push({
+            name: file.name,
+            result: 'Invalid transaction data, only ckb-cli format is supported.',
+          })
+          continue;
+        }
 
         const tx_hash = util.calcTxHash(ckb_cli_tx)
         const existingTx = await db.getTxByTxHash(tx_hash)
@@ -114,14 +120,6 @@ export async function POST (req: NextRequest) {
 
         const filePath = path.join(dirPath, file.name);
 
-        if (!util.validateTxFormat(ckb_cli_tx)) {
-          result.push({
-            name: file.name,
-            result: 'Invalid transaction data, only ckb-cli format is supported.',
-          })
-          continue;
-        }
-
         await writeFile(filePath, fileBuffer);
 
         logger.info(`New transaction json file uploaded to ${filePath}`)
@@ -132,7 +130,7 @@ export async function POST (req: NextRequest) {
         if (multisigConfig) {
           logger.info(`Found known multisig config in ${filePath}`)
 
-          await writeTxToDb(db, ckb_cli_tx, filePath, multisigConfig)
+          await writeTxToDb(db, ckb_cli_tx, filePath, multisigConfig, user)
 
           result.push({
             name: file.name,
@@ -152,13 +150,13 @@ export async function POST (req: NextRequest) {
     // Return a success response
     return NextResponse.json({ result }, { status: 201 });
   } catch (error) {
-    logger.error(`${error}`);
+    logger.error(`Parse transaction JSON failed: ${error}`);
 
-    return NextResponse.json({ error:`${error}` }, { status: 500 });
+    return NextResponse.json({ error: `Parse transaction JSON failed: ${error}` }, { status: 500 });
   }
 }
 
-async function writeTxToDb(db: Database, ckb_cli_tx: TxHelper, filePath: string, multisigConfig: MultisigConfig) {
+async function writeTxToDb(db: Database, ckb_cli_tx: TxHelper, filePath: string, multisigConfig: MultisigConfig, user: User) {
   const tx_hash = util.calcTxHash(ckb_cli_tx)
   // Convert multisigConfig.script to ckb address
   const address = util.scriptToAddress(multisigConfig.script, config().env)
@@ -186,6 +184,7 @@ async function writeTxToDb(db: Database, ckb_cli_tx: TxHelper, filePath: string,
     multisig_config: multisigConfig,
     digest,
     description,
+    uploaded_by: user.name === 'Unknown' ? user.pubKeyHash : user.name,
     uploaded_at: new Date().toISOString(),
     pushed_at: null,
     committed_at: null,

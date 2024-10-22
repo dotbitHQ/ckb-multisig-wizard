@@ -6,6 +6,7 @@ import Link from 'next/link';
 import UploadIcon from '@mui/icons-material/Upload';
 import ListIcon from '@mui/icons-material/List';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import CurrencyExchangeIcon from '@mui/icons-material/CurrencyExchange';
 import { useRouter } from 'next/navigation';
 import { deleteCookie } from 'cookies-next';
 import { CopyToClipboard } from 'react-copy-to-clipboard';
@@ -13,7 +14,7 @@ import { useAuth } from '@/contexts/AuthContext';
 
 const NavBar: React.FC = () => {
   const router = useRouter();
-  const { pubKeyHash, setPubKeyHash } = useAuth();
+  const { pubKeyHash, setPubKeyHash, userName, setUserName } = useAuth();
 
   const [anchorEl, setAnchorEl] = useState<HTMLElement | null>(null);
   const [copyTooltip, setCopyTooltip] = useState('Copy to clipboard');
@@ -30,6 +31,8 @@ const NavBar: React.FC = () => {
     handleClosePopover();
     deleteCookie('pubKeyHash');
     setPubKeyHash(null);
+    deleteCookie('userName');
+    setUserName(null);
 
     router.push('/');
   };
@@ -57,13 +60,13 @@ const NavBar: React.FC = () => {
             </Button>
             <Button sx={{ ml: 2, color: 'white' }} variant="text" component={Link} href="/upload">
               <UploadIcon sx={{ mr: 1 }} />
-            Upload Tx
+              Upload Tx
             </Button>
             <Button
               sx={{ ml: 2, color: 'white' }}
               onClick={handleOpenPopover}
             >
-              {pubKeyHash.slice(0, 6)}...{pubKeyHash.slice(-6)}
+              {userName || `${pubKeyHash.slice(0, 6)}...${pubKeyHash.slice(-6)}`}
             </Button>
           </Box>
         )}

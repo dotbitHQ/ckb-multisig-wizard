@@ -4,14 +4,16 @@ import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
 import { TreeViewBaseItem } from '@mui/x-tree-view/models';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { DbTransaction } from '@/lib/database';
-import { formatInTimeZone } from 'date-fns-tz';
 import { useAuth } from '@/contexts/AuthContext';
 import { TreeItem2, TreeItem2Props, TreeItem2SlotProps } from '@mui/x-tree-view/TreeItem2';
 import { useTreeItem2 } from '@mui/x-tree-view/useTreeItem2';
 import FolderRounded from '@mui/icons-material/FolderRounded';
 import ArticleIcon from '@mui/icons-material/Article';
+import { useSearchParams } from 'next/navigation';
+import * as util from '@/lib/util';
 
 interface TransactionListProps {
+  selectedTransaction: DbTransaction | null;
   transactions: DbTransaction[];
   loading: boolean;
   onSelectTransaction: (id: string) => void;
@@ -22,18 +24,22 @@ interface TransactionView extends DbTransaction {
   sigCount: number;
 }
 
-export default function TransactionSidebar({ transactions, loading, onSelectTransaction }: TransactionListProps) {
+export default function TransactionSidebar({ selectedTransaction, transactions, loading, onSelectTransaction }: TransactionListProps) {
   const { pubKeyHash } = useAuth();
   const [transactionViews, setTransactionViews] = useState<TreeViewBaseItem[]>([]);
+  const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
   useEffect(() => {
+    if (transactions.length <= 0) {
+      return;
+    }
+
     console.log('Update transactions tree view.')
 
     const createTreeItems = (): TreeViewBaseItem[] => {
       const groupedByDate: Record<string, TransactionView[]> = {};
       transactions.forEach(tx => {
-        const txDate = new Date(tx.uploaded_at);
-        const date = formatInTimeZone(txDate, 'UTC', 'yyyy-MM-dd');
+        const date = util.dateToDir(tx.uploaded_at);
         let status = 'unsigned';
         if (tx.rejected_at) {
           status = 'rejected';
@@ -63,31 +69,50 @@ export default function TransactionSidebar({ transactions, loading, onSelectTran
         groupedByDate[date].push(txView);
       });
 
-      return Object.entries(groupedByDate).map(([date, txs]) => ({
-        id: date,
-        label: date,
-        fileType: 'folder',
-        status: 'none',
-        children: txs.map(tx => {
+      const treeItems = [];
+      for (const [date, txs] of Object.entries(groupedByDate)) {
+        const children = [];
+        for (const tx of txs) {
           let txJsonPath = tx.tx_json_path.split('/').pop() || 'Unknown';
 
           if (txJsonPath.length > 20) {
             txJsonPath = txJsonPath.slice(0, 10) + '...' + txJsonPath.slice(-10);
           }
 
-          return {
+          children.push({
             id: tx.id,
             label: txJsonPath,
             fileType: 'json',
             status: tx.status,
             sigCount: tx.sigCount,
-          };
-        }),
-      }));
+          });
+        }
+
+        treeItems.push({
+          id: date,
+          label: date,
+          fileType: 'folder',
+          status: 'none',
+          children: children,
+        });
+      }
+
+      return treeItems;
     };
 
     setTransactionViews(createTreeItems());
   }, [transactions, pubKeyHash])
+
+  useEffect(() => {
+    if (selectedTransaction) {
+      const date = util.dateToDir(selectedTransaction.uploaded_at);
+      setExpandedItems([...expandedItems, date]);
+    }
+  }, [selectedTransaction]);
+
+  const handleExpandedItemsChange = ( _: React.SyntheticEvent, itemIds: string[], ) => {
+    setExpandedItems(itemIds);
+  };
 
   const handleItemClick = (_: React.MouseEvent, itemId: string) => {
     if (!itemId.startsWith('tx')) {
@@ -153,7 +178,7 @@ export default function TransactionSidebar({ transactions, loading, onSelectTran
       <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center' }}>
         <ArrowDownwardIcon sx={{ mr: 1 }} color="success" /> Click a transaction to start
       </Typography>
-      <Stack direction="row" spacing={1} sx={{ mb: 2 }}>
+      <Stack direction="row" spacing={1} rowGap={1} sx={{ mb: 2, flexWrap: 'wrap' }}>
         <Tooltip title="Transactions do not need your signature.">
           <Chip label="Ignored" sx={{ color: '#bdbdbd', borderColor: '#bdbdbd' }} size="small" variant="outlined"/>
         </Tooltip>
@@ -182,6 +207,8 @@ export default function TransactionSidebar({ transactions, loading, onSelectTran
             },
           }}
           items={transactionViews}
+          expandedItems={expandedItems}
+          onExpandedItemsChange={handleExpandedItemsChange}
           onItemClick={handleItemClick}
           slots={{
             item: CustomTreeItem,

@@ -41,3 +41,20 @@ export function validateSignInStatus (_request: NextRequest): NextResponse | nul
 
   return null
 }
+
+export function getSignInUser (): User {
+  const pubKeyHash = cookies().get('pubKeyHash')?.value;
+  if (!pubKeyHash) {
+    throw new Error('Unauthorized');
+  }
+
+  const user = config().users.find(user => user.pubKeyHash === pubKeyHash);
+  if (!user) {
+    return {
+      name: 'Unknown',
+      pubKeyHash,
+    }
+  }
+
+  return user;
+}

@@ -118,19 +118,25 @@ export default function TransactionMain({
                     startIcon={isLoadingStatus ? <CircularProgress size={20} /> : <RefreshIcon />}
                     onClick={onLoadStatus}
                     disabled={isLoadingStatus}
-                  >
-                    {isLoadingStatus ? 'Refreshing...' : 'Refresh'}
-                  </Button>
+                  >Refresh</Button>
                 </Box>
               </TableCell>
             </TableRow>
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>File Path</TableCell>
-              <TableCell>{tx.tx_json_path}</TableCell>
+              <TableCell>
+                <a href={`/api/tx/${tx.id}/download`} target="_blank">
+                  {tx.tx_json_path}
+                </a>
+              </TableCell>
             </TableRow>
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Description</TableCell>
               <TableCell><pre style={{ fontFamily: 'monospace', margin: 0, overflow: 'scroll' }}>{tx.description.trim()}</pre></TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Uploaded By</TableCell>
+              <TableCell>{tx.uploaded_by}</TableCell>
             </TableRow>
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Uploaded At</TableCell>
@@ -139,6 +145,10 @@ export default function TransactionMain({
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Pushed At</TableCell>
               <TableCell>{tx.pushed_at || 'Not pushed yet'}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Committed At</TableCell>
+              <TableCell>{tx.committed_at || 'Not committed yet'}</TableCell>
             </TableRow>
           </TableBody>
         </Table>
@@ -166,6 +176,14 @@ export default function TransactionMain({
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Multisig Script</TableCell>
               <TableCell><pre style={{ fontFamily: 'monospace', margin: 0 }}>{JSON.stringify(tx.multisig_config.script, null, 2)}</pre></TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Require First N</TableCell>
+              <TableCell>{tx.multisig_config.config.require_first_n}</TableCell>
+            </TableRow>
+            <TableRow>
+              <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Threshold</TableCell>
+              <TableCell>{tx.multisig_config.config.threshold} / {tx.multisig_config.config.sighash_addresses.length}</TableCell>
             </TableRow>
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}>Signers</TableCell>
@@ -197,7 +215,7 @@ export default function TransactionMain({
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Typography variant="h6">
                     Signatures
-                    <Typography sx={{ ml: 1, display: 'inline-block', fontSize: '1rem', color: 'secondary.main' }}>({tx.signed.length} / {tx.multisig_config.config.threshold})</Typography>
+                    <Typography sx={{ ml: 1, display: 'inline-block', fontSize: '1rem', color: 'secondary.main' }}>({tx.signed.length} / {tx.multisig_config.config.sighash_addresses.length})</Typography>
                   </Typography>
                   <Tooltip title="Push the transaction to the network">
                     <span>
@@ -249,6 +267,14 @@ export default function TransactionMain({
         </Table>
       </TableContainer>)}
 
+      {/* Ledger Signing Section */}
+      <Paper sx={{ p: 2, mb: 2 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>Sign Automatically with Ledger</Typography>
+        <Button variant="contained" color="primary" onClick={onLedgerSign}>
+          Sign with Ledger
+        </Button>
+      </Paper>
+
       {/* Manual Signature Submission Form */}
       <Paper sx={{ p: 2, mb: 2 }}>
         <Typography variant="h6" sx={{ mb: 2 }}>Sign Manually</Typography>
@@ -285,14 +311,6 @@ export default function TransactionMain({
             Submit Signature
           </Button>
         </form>
-      </Paper>
-
-      {/* Ledger Signing Section */}
-      <Paper sx={{ p: 2, mb: 2 }}>
-        <Typography variant="h6" sx={{ mb: 2 }}>Sign Automatically with Ledger</Typography>
-        <Button variant="contained" color="primary" onClick={onLedgerSign}>
-          Sign with Ledger
-        </Button>
       </Paper>
     </Box>
   );

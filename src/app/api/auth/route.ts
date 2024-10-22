@@ -11,9 +11,9 @@ export async function POST(request: NextRequest) {
 
   const verifyOnly = request.nextUrl.searchParams.get('verify') === 'true';
   const { pubKeyHash } = await request.json();
-  const users = config().users.map(user => user.pubKeyHash);
+  const user = config().users.find(user => user.pubKeyHash === pubKeyHash);
 
-  if (!users.includes(pubKeyHash)) {
+  if (!user) {
     logger.warn(`User ${pubKeyHash} not found`);
 
     return NextResponse.json({ error: 'User not found' }, { status: 401 });
@@ -26,6 +26,13 @@ export async function POST(request: NextRequest) {
     logger.info(`User ${pubKeyHash} is trying to sign in ...`);
 
     cookies().set('pubKeyHash', pubKeyHash, {
+      secure: true,
+      sameSite: 'strict',
+      maxAge: 86400, // 24 hours
+      path: '/',
+      priority: 'high'
+    });
+    cookies().set('userName', user.name, {
       secure: true,
       sameSite: 'strict',
       maxAge: 86400, // 24 hours

@@ -23,6 +23,7 @@ export interface DbTransaction {
   multisig_config: MultisigConfig,
   digest: string,
   description: string,
+  uploaded_by: string,
   uploaded_at: string,
   pushed_at: string | null,
   committed_at: string | null,
@@ -63,9 +64,10 @@ export class Database {
     return this.db.data.tx.find(transaction => transaction.tx_hash === txHash);
   }
 
-  async getAllTx(): Promise<DbTransaction[]> {
+  async getAllTx(limit: number = 1000, order: 'asc' | 'desc' = 'desc'): Promise<DbTransaction[]> {
     await this.db.read()
-    return this.db.data.tx;
+    const txs = this.db.data.tx.slice(this.db.data.tx.length - limit, this.db.data.tx.length);
+    return order === 'desc' ? txs.reverse() : txs;
   }
 
   async replaceInsertTx(tx: DbTransaction): Promise<DbTransaction> {

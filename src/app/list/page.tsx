@@ -1,69 +1,84 @@
 "use client"
 
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useEffect, useState } from 'react';
 import { Grid2 as Grid, Snackbar, Alert } from '@mui/material';
 import { DbTransaction } from '@/lib/database';
 import { getLedgerCkb } from '@/lib/ledger';
 import TransactionSidebar from './TransactionSidebar';
 import TransactionMain from './TransactionMain';
+import { useRouter, useSearchParams } from 'next/navigation';
+import * as util from '@/lib/util';
 
 export default function Page() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [transactions, setTransactions] = useState<DbTransaction[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedTransaction, setSelectedTransaction] = useState<DbTransaction | null>(null);
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [successAlert, setSuccessAlert] = useState<string | null>(null);
-  const [txStatus, setTxStatus] = useState<string | null>(null);
   const [openAlert, setOpenAlert] = useState(false);
   const [isLoadingStatus, setIsLoadingStatus] = useState(false);
   const [isPushingTx, setIsPushingTx] = useState(false);
 
   useEffect(() => {
-    if (selectedTransaction) {
-      if (selectedTransaction.committed_at) {
-        setTxStatus('committed');
-      } else if (selectedTransaction.rejected_at) {
-        setTxStatus('rejected');
-      } else {
-        handleLoadStatus();
-      }
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedTransaction]);
+    (async () => {
+      console.log('Fetching transactions');
+      try {
+        const response = await fetch('/api/tx');
+        const data = await response.json();
+        if (data.result) {
+          const txs: DbTransaction[] = data.result;
+          setTransactions(txs);
 
-  useEffect(() => {
-    fetchTransactions();
+          const txId = searchParams.get('tx');
+          if (txId) {
+            let tx = txs.find(tx => tx.id === txId);
+            if (tx) {
+              setSelectedTransaction(tx);
+            }
+          }
+        } else {
+          console.error('Error fetching transactions:', data.error);
+        }
+      } catch (error) {
+        console.error('Error fetching transactions:', error);
+      } finally {
+        setLoading(false);
+      }
+    })();
   }, []);
 
+  const txStatus = useMemo(() => {
+    if (selectedTransaction) {
+      if (selectedTransaction.committed_at) {
+        return 'committed';
+      } else if (selectedTransaction.rejected_at) {
+        return 'rejected';
+      } else if (selectedTransaction.pushed_at) {
+        return 'pushed';
+      } else {
+        return 'unknown';
+      }
+    }
+
+    return null;
+  }, [selectedTransaction]);
+
   const fetchTransaction = async (id: string) => {
+    console.log(`Fetching tx: ${id}`);
     try {
       const response = await fetch(`/api/tx/${id}`);
       const data = await response.json();
-      setTransactions(prevTransactions =>
-        prevTransactions.map(tx =>
-          tx.id === data.result.id ? data.result : tx
-        )
-      );
-      return data.result;
-    } catch (error) {
-      console.error('Error fetching transaction:', error);
-      return null;
-    }
-  }
-
-  const fetchTransactions = async () => {
-    try {
-      const response = await fetch('/api/tx');
-      const data = await response.json();
       if (data.result) {
-        setTransactions(data.result);
+        return data.result;
       } else {
-        console.error('Error fetching transactions:', data.error);
+        throw new Error(data.error || 'Failed to fetch transaction');
       }
     } catch (error) {
-      console.error('Error fetching transactions:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error fetching transaction:', error);
+      setErrorAlert(`Error fetching transaction: ${error}`);
+      return null;
     }
   };
 
@@ -72,21 +87,14 @@ export default function Page() {
       return;
     }
 
-    console.log(`Loading status for transaction: ${selectedTransaction.id}`);
-
     setIsLoadingStatus(true);
 
     try {
-      const response = await fetch(`/api/tx/${selectedTransaction.id}/status`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch transaction status');
+      const tx = await fetchTransaction(selectedTransaction.id);
+      if (tx) {
+        setSelectedTransaction(tx);
       }
-      const data = await response.json();
-      setTxStatus(data.status);
-      fetchTransaction(selectedTransaction.id);
-    } catch (error) {
-      console.error('Error loading transaction status:', error);
-      setErrorAlert(`Error loading transaction status: ${error}`);
+    } catch (_) {
     } finally {
       setIsLoadingStatus(false);
     }
@@ -94,12 +102,22 @@ export default function Page() {
 
   const handleSelectTransaction = async (id: string) => {
     console.info(`Selected transaction: ${id}`);
-    try {
-      const tx = await fetchTransaction(id);
+
+    router.push(`/list?tx=${id}`);
+    const tx = await fetchTransaction(id);
+    if (tx) {
       setSelectedTransaction(tx);
-    } catch (error) {
-      console.error('Error fetching transaction:', error);
-      setErrorAlert(`Error fetching transaction: ${error}`);
+
+      // Update the transactions if the transaction is updated
+      const currentTx = transactions.find(prevTx => prevTx.id === tx.id);
+      if (!util.isObjectEqual(tx, currentTx)) {
+        console.log('Transaction updated, updating local state ...');
+        setTransactions(prevTransactions =>
+          prevTransactions.map(prevTx =>
+            prevTx.id === tx.id ? tx : prevTx
+          )
+        );
+      }
     }
   };
 
@@ -127,13 +145,16 @@ export default function Page() {
 
       const data = await response.json();
       setSelectedTransaction(data.transaction);
-      setTransactions(prevTransactions =>
-        prevTransactions.map(tx =>
-          tx.id === data.transaction.id ? data.transaction : tx
-        )
-      );
+      // setTransactions(prevTransactions =>
+      //   prevTransactions.map(tx =>
+      //     tx.id === data.transaction.id ? data.transaction : tx
+      //   )
+      // );
 
-      if (data.transaction.signed.length >= data.transaction.multisig_config.config.threshold && !data.transaction.pushed_at) {
+      if (data.transaction.signed.length >= data.transaction.multisig_config.config.threshold &&
+        !data.transaction.pushed_at &&
+        !data.transaction.rejected_at) {
+        console.log('Enough signatures collected, will push transaction automatically.');
         await handlePushTx();
       } else {
         setSuccessAlert('Signature submitted successfully');
@@ -162,13 +183,11 @@ export default function Page() {
         signature = `0x${signature}`;
       }
 
-      await handleSignatureSubmit(signature, lockArgs);
+      // Debug only
+      // const signature = '0xf34347f24fd19dc0bdca3045dd46a4c1bc2c419727d40f6bd796f1c4310d1aab1d22440e06a31a223bf032660751654bf6c233def549cc26c4f7c906719e992b00'
+      // const lockArgs = '0xaf59eba3d501a7590692b97998808203003021c2'
 
-      if (selectedTransaction.signed.length >= selectedTransaction.multisig_config.config.threshold) {
-        await handlePushTx();
-      } else {
-        setSuccessAlert('Ledger signature submitted successfully');
-      }
+      await handleSignatureSubmit(signature, lockArgs);
     } catch (error) {
       console.error('Error signing with ledger:', error);
       setErrorAlert(`Error signing with ledger: ${error}`);
@@ -190,6 +209,8 @@ export default function Page() {
 
     setIsPushingTx(true);
 
+    console.log('Pushing transaction ...');
+
     try {
       const response = await fetch(`/api/tx/${selectedTransaction.id}/push`, {
         method: 'POST',
@@ -205,11 +226,11 @@ export default function Page() {
       // Update the local state to reflect the pushed transaction
       const updatedTransaction = { ...selectedTransaction, pushed_at: new Date().toISOString() };
       setSelectedTransaction(updatedTransaction);
-      setTransactions(prevTransactions =>
-        prevTransactions.map(tx =>
-          tx.id === updatedTransaction.id ? updatedTransaction : tx
-        )
-      );
+      // setTransactions(prevTransactions =>
+      //   prevTransactions.map(tx =>
+      //     tx.id === updatedTransaction.id ? updatedTransaction : tx
+      //   )
+      // );
     } catch (error) {
       console.error('Error pushing transaction:', error);
       setErrorAlert(`Error pushing transaction: ${error}`);
@@ -221,6 +242,7 @@ export default function Page() {
   return (
     <Grid container>
       <TransactionSidebar
+        selectedTransaction={selectedTransaction}
         transactions={transactions}
         loading={loading}
         onSelectTransaction={handleSelectTransaction}

@@ -1,22 +1,25 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useState, Suspense, useEffect } from 'react';
 import { Box, Typography, Button, CircularProgress, TextField } from '@mui/material';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import { useRouter } from 'next/navigation';
 import { getLedgerCkb } from '@/lib/ledger';
 import { useAuth } from '@/contexts/AuthContext';
 import dynamic from 'next/dynamic';
+import { useSearchParams } from 'next/navigation';
 
 const LoginAlert = dynamic(() => import('../components/LoginAlert'), { ssr: false });
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { pubKeyHash, setPubKeyHash } = useAuth();
 
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [manualPubKeyHash, setManualPubKeyHash] = useState('');
+  const [manualSignIn, setManualSignIn] = useState(false);
 
   const trySignIn = async (pubKeyHash: string) => {
     const response = await fetch('/api/auth', {
@@ -32,6 +35,13 @@ export default function LoginPage() {
       setErrorAlert(res.error);
     }
   }
+
+  useEffect(() => {
+    const manual = searchParams.get('manual');
+    if (manual) {
+      setManualSignIn(true);
+    }
+  }, [searchParams]);
 
   const handleLedgerSignIn = async () => {
     setIsLoading(true);
@@ -112,26 +122,30 @@ export default function LoginPage() {
             >
               {isLoading ? <CircularProgress size={24} /> : 'Sign in with Ledger'}
             </Button>
-            <Typography variant="body1" sx={{ mt: 2, mb: 1 }}>
-              Or sign in manually:
-            </Typography>
-            <Box sx={{ mt: 1, mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-              <TextField
-                label="Public Key Hash"
-                variant="outlined"
-                value={manualPubKeyHash}
-                onChange={(e) => setManualPubKeyHash(e.target.value)}
-                sx={{ mt: 1, mb: 1, width: '400px' }}
-                placeholder="0x..."
-              />
-              <Button
-                variant="contained"
-                onClick={handleManualSignIn}
-                sx={{ ml: 2, '& .MuiInputBase-input': { fontFamily: 'monospace' } }}
-              >
-                Sign In
-              </Button>
-            </Box>
+            {manualSignIn && (
+              <>
+                <Typography variant="body1" sx={{ mt: 2, mb: 1 }}>
+                  Or sign in manually:
+                </Typography>
+                <Box sx={{ mt: 1, mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                  <TextField
+                    label="Public Key Hash"
+                    variant="outlined"
+                    value={manualPubKeyHash}
+                    onChange={(e) => setManualPubKeyHash(e.target.value)}
+                    sx={{ mt: 1, mb: 1, width: '400px' }}
+                    placeholder="0x..."
+                  />
+                  <Button
+                    variant="contained"
+                    onClick={handleManualSignIn}
+                    sx={{ ml: 2, '& .MuiInputBase-input': { fontFamily: 'monospace' } }}
+                  >
+                    Sign In
+                  </Button>
+                </Box>
+              </>
+            )}
           </>
         )}
       </Box>

@@ -7,6 +7,8 @@ import { usePathname, useRouter } from 'next/navigation';
 interface AuthContextType {
   pubKeyHash: string | null;
   setPubKeyHash: (pubKeyHash: string | null) => void;
+  userName: string | null;
+  setUserName: (userName: string | null) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -15,6 +17,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const pathname = usePathname();
   const router = useRouter();
   const [pubKeyHash, setPubKeyHash] = useState<string | null>(null);
+  const [userName, setUserName] = useState<string | null>(null);
 
   useEffect(() => {
     const storedPubKeyHash = getCookie('pubKeyHash') as string;
@@ -23,10 +26,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     setPubKeyHash(storedPubKeyHash);
+
+    const storedUserName = getCookie('userName') as string;
+    setUserName(storedUserName);
   }, [router, pathname]);
 
   return (
-    <AuthContext.Provider value={{ pubKeyHash, setPubKeyHash }}>
+    <AuthContext.Provider value={{ pubKeyHash, setPubKeyHash, userName, setUserName }}>
       {children}
     </AuthContext.Provider>
   );

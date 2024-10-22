@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import getDb from '@/lib/database'
 import rootLogger from '@/lib/log'
 import { validateSignInStatus } from '@/lib/server-auth';
+import * as util from '@/lib/server-util';
 
 const route = '/api/tx/[id]'
 const logger = rootLogger.child({ route });
@@ -20,6 +21,15 @@ export async function GET (req: NextRequest, { params }: { params: { id: string 
     const tx = await db.getTx(id);
 
     if (tx) {
+      const { status, committed_at } = await util.getTransactionStatus(tx.tx_hash);
+      if (status === 'committed' && tx.committed_at === null) {
+        tx.committed_at = committed_at!.toISOString();
+        await db.updateTx(tx);
+      } else if (status === 'rejected' && tx.rejected_at === null) {
+        tx.rejected_at = new Date().toISOString();
+        await db.updateTx(tx);
+      }
+
       return NextResponse.json({ result: tx });
     } else {
       return NextResponse.json({ error: 'Transaction not found' }, { status: 404 });
