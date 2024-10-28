@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     return res;
   }
 
-  let addresses = config().multisigConfigs.map(item => {
+  const addresses = config().multisigConfigs.map(item => {
     return util.scriptToAddress(item.script, config().env)
   });
 

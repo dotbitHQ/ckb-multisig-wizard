@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import rootLogger from '@/lib/log';
 import getDb from '@/lib/database';
-import { getSignInUser, validateSignInStatus } from '@/lib/server-auth';
+import { validateSignInStatus } from '@/lib/server-auth';
 
 const route = '/api/tx/[id]/download';
 const logger = rootLogger.child({ route });

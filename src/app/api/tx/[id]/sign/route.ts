@@ -17,11 +17,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
   try {
     const db = await getDb();
-    let { lock_args, signature } = await req.json();
-
-    if (!signature.startsWith("0x")) {
-      signature = `0x${signature}`;
-    }
+    const { lock_args, signature } = await req.json();
+    const prefixedSignature = !signature.startsWith("0x") ? `0x${signature}` : signature;
 
     // Fetch the current transaction
     const tx = await db.getTx(id);
@@ -32,9 +29,9 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
     // Check if the signature already exists
     const existingSignatureIndex = tx.signed.findIndex(sig => sig.lock_args === lock_args);
     if (existingSignatureIndex !== -1) {
-      tx.signed[existingSignatureIndex].signature = signature;
+      tx.signed[existingSignatureIndex].signature = prefixedSignature;
     } else {
-      tx.signed.push({ lock_args, signature });
+      tx.signed.push({ lock_args, signature: prefixedSignature });
     }
 
     const success = await db.updateTx(tx);

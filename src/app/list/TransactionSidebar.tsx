@@ -1,7 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Box, Typography, CircularProgress, Grid2 as Grid, Stack, Chip, Tooltip } from '@mui/material';
 import ArrowDownwardIcon from '@mui/icons-material/ArrowDownward';
-import { TreeViewBaseItem } from '@mui/x-tree-view/models';
 import { RichTreeView } from '@mui/x-tree-view/RichTreeView';
 import { DbTransaction } from '@/lib/database';
 import { useAuth } from '@/contexts/AuthContext';
@@ -9,7 +8,6 @@ import { TreeItem2, TreeItem2Props, TreeItem2SlotProps } from '@mui/x-tree-view/
 import { useTreeItem2 } from '@mui/x-tree-view/useTreeItem2';
 import FolderRounded from '@mui/icons-material/FolderRounded';
 import ArticleIcon from '@mui/icons-material/Article';
-import { useSearchParams } from 'next/navigation';
 import * as util from '@/lib/util';
 
 interface TransactionListProps {
@@ -26,92 +24,90 @@ interface TransactionView extends DbTransaction {
 
 export default function TransactionSidebar({ selectedTransaction, transactions, loading, onSelectTransaction }: TransactionListProps) {
   const { pubKeyHash } = useAuth();
-  const [transactionViews, setTransactionViews] = useState<TreeViewBaseItem[]>([]);
+  // const [transactionViews, setTransactionViews] = useState<TreeViewBaseItem[]>([]);
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
 
-  useEffect(() => {
+  if (selectedTransaction) {
+    const date = util.dateToDir(selectedTransaction.uploaded_at);
+    if (!expandedItems.includes(date)) {
+      setExpandedItems([...expandedItems, date]);
+    }
+  }
+
+  const transactionViews = useMemo(() => {
     if (transactions.length <= 0) {
-      return;
+      return [];
     }
 
-    console.log('Update transactions tree view.')
+    console.log('Update transactions tree view:', transactions)
 
-    const createTreeItems = (): TreeViewBaseItem[] => {
-      const groupedByDate: Record<string, TransactionView[]> = {};
-      transactions.forEach(tx => {
-        const date = util.dateToDir(tx.uploaded_at);
-        let status = 'unsigned';
-        if (tx.rejected_at) {
-          status = 'rejected';
-        } else if (tx.committed_at) {
-          status = 'committed';
-        } else {
-          if (pubKeyHash && tx.multisig_config.config.sighash_addresses.includes(pubKeyHash)) {
-            if (tx.signed.length >= tx.multisig_config.config.threshold || tx.signed.some(sig => sig.lock_args === pubKeyHash)) {
-              status = 'signed';
-            } else {
-              status = 'unsigned';
-            }
+    const groupedByDate: Record<string, TransactionView[]> = {};
+    transactions.forEach(tx => {
+      const date = util.dateToDir(tx.uploaded_at);
+      let status = 'unsigned';
+      if (tx.rejected_at) {
+        status = 'rejected';
+      } else if (tx.committed_at) {
+        status = 'committed';
+      } else {
+        if (pubKeyHash && tx.multisig_config.config.sighash_addresses.includes(pubKeyHash)) {
+          if (tx.signed.length >= tx.multisig_config.config.threshold || tx.signed.some(sig => sig.lock_args === pubKeyHash)) {
+            status = 'signed';
           } else {
-            status = 'ignored';
+            status = 'unsigned';
           }
+        } else {
+          status = 'ignored';
+        }
+      }
+
+      const txView: TransactionView = {
+        ...tx,
+        status,
+        sigCount: tx.signed.length,
+      };
+
+      if (!groupedByDate[date]) {
+        groupedByDate[date] = [];
+      }
+      groupedByDate[date].push(txView);
+    });
+
+    const treeItems = [];
+    for (const [date, txs] of Object.entries(groupedByDate)) {
+      const children = [];
+      for (const tx of txs) {
+        let txJsonPath = tx.tx_json_path.split('/').pop() || 'Unknown';
+
+        if (txJsonPath.length > 20) {
+          txJsonPath = txJsonPath.slice(0, 10) + '...' + txJsonPath.slice(-10);
         }
 
-        const txView: TransactionView = {
-          ...tx,
-          status,
-          sigCount: tx.signed.length,
-        };
-
-        if (!groupedByDate[date]) {
-          groupedByDate[date] = [];
-        }
-        groupedByDate[date].push(txView);
-      });
-
-      const treeItems = [];
-      for (const [date, txs] of Object.entries(groupedByDate)) {
-        const children = [];
-        for (const tx of txs) {
-          let txJsonPath = tx.tx_json_path.split('/').pop() || 'Unknown';
-
-          if (txJsonPath.length > 20) {
-            txJsonPath = txJsonPath.slice(0, 10) + '...' + txJsonPath.slice(-10);
-          }
-
-          children.push({
-            id: tx.id,
-            label: txJsonPath,
-            fileType: 'json',
-            status: tx.status,
-            sigCount: tx.sigCount,
-          });
-        }
-
-        treeItems.push({
-          id: date,
-          label: date,
-          fileType: 'folder',
-          status: 'none',
-          children: children,
+        children.push({
+          id: tx.id,
+          label: txJsonPath,
+          fileType: 'json',
+          status: tx.status,
+          sigCount: tx.sigCount,
         });
       }
 
-      return treeItems;
-    };
-
-    setTransactionViews(createTreeItems());
-  }, [transactions, pubKeyHash])
-
-  useEffect(() => {
-    if (selectedTransaction) {
-      const date = util.dateToDir(selectedTransaction.uploaded_at);
-      setExpandedItems([...expandedItems, date]);
+      treeItems.push({
+        id: date,
+        label: date,
+        fileType: 'folder',
+        status: 'none',
+        children: children,
+      });
     }
-  }, [selectedTransaction]);
 
-  const handleExpandedItemsChange = ( _: React.SyntheticEvent, itemIds: string[], ) => {
-    setExpandedItems(itemIds);
+    return treeItems;
+  }, [transactions, pubKeyHash]);
+
+  // Because the expandedItems is passed as a prop, the RichTreeView become controlled component,
+  // so we need to handle the expandedItems change manually.
+  const handleExpandedItemsChange = ( _: React.SyntheticEvent, expandedItems: string[], ) => {
+    setExpandedItems(expandedItems);
   };
 
   const handleItemClick = (_: React.MouseEvent, itemId: string) => {

@@ -100,7 +100,7 @@ export function isValidAddress(address: string): boolean {
   try {
     addressToScript(address)
     return true
-  } catch (error) {
+  } catch (_) {
     return false
   }
 }

@@ -30,6 +30,9 @@ export default function TransactionList() {
         const data = await response.json();
         if (data.result) {
           const txs: DbTransaction[] = data.result;
+
+          console.log('Updating transactions list ...');
+
           setTransactions(txs);
 
           const txId = searchParams.get('tx');
@@ -98,6 +101,8 @@ export default function TransactionList() {
 
         const txInList = transactions.find(tx => tx.id === tx.id);
         if (util.isObjectEqual(tx, txInList)) {
+          console.log('Updating transactions list due to transaction status changed ...');
+
           setTransactions(prevTransactions =>
             prevTransactions.map(prevTx =>
               prevTx.id === tx.id ? tx : prevTx
@@ -122,7 +127,8 @@ export default function TransactionList() {
       // Update the transactions if the transaction is updated
       const currentTx = transactions.find(prevTx => prevTx.id === tx.id);
       if (!util.isObjectEqual(tx, currentTx)) {
-        console.log('Transaction updated, updating local state ...');
+        console.log('Updating transactions list due to transaction updated ...');
+
         setTransactions(prevTransactions =>
           prevTransactions.map(prevTx =>
             prevTx.id === tx.id ? tx : prevTx

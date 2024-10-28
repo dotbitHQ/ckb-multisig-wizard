@@ -1,7 +1,7 @@
 import path from 'path';
 import { mkdir } from 'fs/promises';
 import { NextRequest, NextResponse } from "next/server";
-import config, { MultisigConfig, User } from '@/lib/config'
+import config, { User } from '@/lib/config'
 import rootLogger from '@/lib/log'
 import getDb, { Database, } from '@/lib/database'
 import * as serverUtil from '@/lib/server-util';
@@ -34,11 +34,11 @@ export async function POST (req: NextRequest) {
     if (!serverUtil.isValidAddress(data.to)) {
       return NextResponse.json({ error: 'Invalid to address' }, { status: 400 });
     }
-    let value = BigInt(data.value);
+    const value = BigInt(data.value);
     if (value <= 0 || value > MAX_VALUE) {
       return NextResponse.json({ error: `The value must be a number between 0 and ${MAX_VALUE}` }, { status: 400 });
     }
-    let fee = BigInt(data.fee);
+    const fee = BigInt(data.fee);
     if (fee <= 0 || fee > MAX_FEE) {
       return NextResponse.json({ error: `The fee must be a number between 0 and ${MAX_FEE}` }, { status: 400 });
     }
@@ -103,7 +103,7 @@ export async function POST (req: NextRequest) {
     return NextResponse.json({
       name: filePath.split('/').slice(-1)[0],
       result: 'Successfully created transaction.',
-     }, { status: 201 });
+    }, { status: 201 });
   } catch (error) {
     logger.error(`Parse transaction JSON failed: ${error}`);
 
