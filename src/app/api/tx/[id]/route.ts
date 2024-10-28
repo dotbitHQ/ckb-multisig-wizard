@@ -24,6 +24,8 @@ export async function GET (req: NextRequest, { params }: { params: { id: string 
       const { status, committed_at } = await util.getTransactionStatus(tx.tx_hash);
       if (status === 'committed' && tx.committed_at === null) {
         tx.committed_at = committed_at!.toISOString();
+        tx.rejected_at = null;
+        tx.reject_reason = null;
         await db.updateTx(tx);
       } else if (status === 'rejected' && tx.rejected_at === null) {
         tx.rejected_at = new Date().toISOString();

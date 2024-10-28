@@ -3,8 +3,8 @@ import { scriptToAddress as ckbScriptToAddress } from '@nervosnetwork/ckb-sdk-ut
 import { formatInTimeZone } from 'date-fns-tz';
 import { ReadonlyURLSearchParams } from 'next/navigation';
 
-export function dateToDir(date: string): string {
-  const txDate = new Date(date);
+export function dateToDir(date?: string | null): string {
+  const txDate = date ? new Date(date) : new Date();
   const dir = formatInTimeZone(txDate, 'UTC', 'yyyy-MM-dd');
   return dir;
 }
@@ -18,6 +18,22 @@ export function lockArgsToAddress(lockArgs: string, env: string = 'mainnet'): st
   const address = ckbScriptToAddress(script, env === 'mainnet' ? true : false)
 
   return address
+}
+
+export function isCKBScript(script: CKBComponents.Script | RPC.Script): script is CKBComponents.Script {
+  return (script as CKBComponents.Script).codeHash !== undefined;
+}
+
+export function scriptToAddress(script: CKBComponents.Script | RPC.Script, env: string = 'mainnet'): string {
+  if (!isCKBScript(script)) {
+    script = {
+      codeHash: script.code_hash,
+      hashType: script.hash_type,
+      args: script.args,
+    }
+  }
+
+  return ckbScriptToAddress(script, env === 'mainnet' ? true : false)
 }
 
 export function isObjectEqual(obj1: any, obj2: any) {

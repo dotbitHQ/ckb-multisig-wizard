@@ -3,7 +3,7 @@ import 'server-only'
 import { MultisigConfig } from "@/lib/config";
 import config from "@/lib/config";
 import { rawTransactionToHash } from '@nervosnetwork/ckb-sdk-utils';
-import { scriptToAddress as ckbScriptToAddress } from '@nervosnetwork/ckb-sdk-utils'
+import { scriptToAddress as ckbScriptToAddress, addressToScript } from '@nervosnetwork/ckb-sdk-utils'
 import { ckbRpc } from './ckb'
 import { execSync } from "child_process";
 import rootLogger from '@/lib/log'
@@ -20,6 +20,11 @@ function executeCommand(cmd: string): { stdout: string; stderr: string } {
       stdio: ['pipe', 'pipe', 'pipe']
     };
     const stdout = execSync(cmd, options);
+
+    if (!stdout || stdout.toString().length === 0) {
+      logger.warn(`Empty stdout of command: ${cmd}`);
+    }
+
     return { stdout: stdout.toString(), stderr: '' };
   } catch (error) {
     if (error instanceof Error && 'stderr' in error) {
@@ -81,6 +86,23 @@ export function calcTxDigest(address: string, tx_file_path: string): { stdout: s
   const cmd = `${bin} tx get-digest --format ckb-cli -a ${address} -t ${tx_file_path}`;
   logger.debug(`Execute command: ${cmd}`);
   return executeCommand(cmd);
+}
+
+export function createTransferTx(from: string, to: string, value: number, fee: number, tx_file_path: string): { stdout: string; stderr: string } {
+  const bin = config().toolboxCliBin;
+  const cmd = `${bin} push transfer --format ckb-cli --from ${from} --to ${to} -v ${value} -f ${fee} -F ${tx_file_path} .`;
+  logger.debug(`Execute command: ${cmd}`);
+
+  return executeCommand(cmd);
+}
+
+export function isValidAddress(address: string): boolean {
+  try {
+    addressToScript(address)
+    return true
+  } catch (error) {
+    return false
+  }
 }
 
 export function scriptToAddress(script: RPC.Script, env: string = 'mainnet'): string {

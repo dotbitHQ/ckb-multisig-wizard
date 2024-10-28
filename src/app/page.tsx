@@ -11,15 +11,54 @@ import { useSearchParams } from 'next/navigation';
 
 const LoginAlert = dynamic(() => import('../components/LoginAlert'), { ssr: false });
 
+function ManualSignIn({ manualPubKeyHash, setManualPubKeyHash, handleManualSignIn }: { manualPubKeyHash: string, setManualPubKeyHash: (value: string) => void, handleManualSignIn: () => void }) {
+  const searchParams = useSearchParams();
+  const [manualSignIn, setManualSignIn] = useState(false);
+
+  useEffect(() => {
+    const manual = searchParams.get('manual');
+    if (manual) {
+      setManualSignIn(true);
+    }
+  }, [searchParams]);
+
+  return (
+    <>
+      {manualSignIn && (
+        <>
+          <Typography variant="body1" sx={{ mt: 2, mb: 1 }}>
+            Or sign in manually:
+          </Typography>
+          <Box sx={{ mt: 1, mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+            <TextField
+              label="Public Key Hash"
+              variant="outlined"
+              value={manualPubKeyHash}
+              onChange={(e) => setManualPubKeyHash(e.target.value)}
+              sx={{ mt: 1, mb: 1, width: '400px' }}
+              placeholder="0x..."
+            />
+            <Button
+              variant="contained"
+              onClick={handleManualSignIn}
+              sx={{ ml: 2, '& .MuiInputBase-input': { fontFamily: 'monospace' } }}
+            >
+              Sign In
+            </Button>
+          </Box>
+        </>
+      )}
+    </>
+  )
+}
+
 export default function LoginPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { pubKeyHash, setPubKeyHash } = useAuth();
 
   const [errorAlert, setErrorAlert] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [manualPubKeyHash, setManualPubKeyHash] = useState('');
-  const [manualSignIn, setManualSignIn] = useState(false);
 
   const trySignIn = async (pubKeyHash: string) => {
     const response = await fetch('/api/auth', {
@@ -35,13 +74,6 @@ export default function LoginPage() {
       setErrorAlert(res.error);
     }
   }
-
-  useEffect(() => {
-    const manual = searchParams.get('manual');
-    if (manual) {
-      setManualSignIn(true);
-    }
-  }, [searchParams]);
 
   const handleLedgerSignIn = async () => {
     setIsLoading(true);
@@ -122,30 +154,13 @@ export default function LoginPage() {
             >
               {isLoading ? <CircularProgress size={24} /> : 'Sign in with Ledger'}
             </Button>
-            {manualSignIn && (
-              <>
-                <Typography variant="body1" sx={{ mt: 2, mb: 1 }}>
-                  Or sign in manually:
-                </Typography>
-                <Box sx={{ mt: 1, mb: 1, display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
-                  <TextField
-                    label="Public Key Hash"
-                    variant="outlined"
-                    value={manualPubKeyHash}
-                    onChange={(e) => setManualPubKeyHash(e.target.value)}
-                    sx={{ mt: 1, mb: 1, width: '400px' }}
-                    placeholder="0x..."
-                  />
-                  <Button
-                    variant="contained"
-                    onClick={handleManualSignIn}
-                    sx={{ ml: 2, '& .MuiInputBase-input': { fontFamily: 'monospace' } }}
-                  >
-                    Sign In
-                  </Button>
-                </Box>
-              </>
-            )}
+            <Suspense>
+              <ManualSignIn
+                manualPubKeyHash={manualPubKeyHash}
+                setManualPubKeyHash={setManualPubKeyHash}
+                handleManualSignIn={handleManualSignIn}
+              />
+            </Suspense>
           </>
         )}
       </Box>

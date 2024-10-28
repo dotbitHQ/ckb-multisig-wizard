@@ -29,13 +29,6 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       }, { status: 404 });
     }
 
-    // Check if the transaction has already been pushed
-    if (transaction.pushed_at) {
-      return NextResponse.json({
-        error: 'Transaction has already been pushed'
-      }, { status: 400 });
-    }
-
     // Check if the transaction has enough signatures
     if (transaction.signed.length < transaction.multisig_config.config.threshold) {
       return NextResponse.json({
@@ -66,6 +59,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
       if (stderr === '') {
         // Update the transaction in the database
         transaction.pushed_at = new Date().toISOString();
+        transaction.rejected_at = null;
+        transaction.reject_reason = null;
         await db.updateTx(transaction);
 
         logger.info(`Transaction pushed: ${transaction.tx_hash}`);

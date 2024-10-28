@@ -87,7 +87,7 @@ export async function POST (req: NextRequest) {
             result: 'success',
           })
         } else {
-          logger.info(`Can not find known multisig config in ${filePath}`)
+          logger.error(`Can not find known multisig config in ${filePath}`)
 
           result.push({
             name: fileName,
@@ -161,7 +161,7 @@ async function writeTxToDb(db: Database, ckb_cli_tx: TxHelper, filePath: string,
   // Convert multisigConfig.script to ckb address
   const address = util.scriptToAddress(multisigConfig.script, config().env)
 
-  const { stdout: description, stderr: descriptionError } = util.calcTxDescription(process.env.NEXT_PUBLIC_ENV!, filePath)
+  const { stdout: description, stderr: descriptionError } = util.calcTxDescription(config().env, filePath)
   if (descriptionError) {
     logger.error(`Failed to calculate transaction description: ${descriptionError}`);
     throw new Error(descriptionError);

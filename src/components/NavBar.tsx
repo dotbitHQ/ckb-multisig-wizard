@@ -62,6 +62,10 @@ const NavBar: React.FC = () => {
               <UploadIcon sx={{ mr: 1 }} />
               Upload Tx
             </Button>
+            <Button sx={{ ml: 2, color: 'white' }} variant="text" component={Link} href="/transfer">
+              <CurrencyExchangeIcon sx={{ mr: 1 }} />
+              Transfer
+            </Button>
             <Button
               sx={{ ml: 2, color: 'white' }}
               onClick={handleOpenPopover}

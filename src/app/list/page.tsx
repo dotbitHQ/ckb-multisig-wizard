@@ -9,7 +9,7 @@ import TransactionMain from './TransactionMain';
 import { useRouter, useSearchParams } from 'next/navigation';
 import * as util from '@/lib/util';
 
-export default function Page() {
+export default function TransactionList() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [transactions, setTransactions] = useState<DbTransaction[]>([]);
@@ -24,6 +24,7 @@ export default function Page() {
   useEffect(() => {
     (async () => {
       console.log('Fetching transactions');
+
       try {
         const response = await fetch('/api/tx');
         const data = await response.json();
@@ -33,7 +34,7 @@ export default function Page() {
 
           const txId = searchParams.get('tx');
           if (txId) {
-            let tx = txs.find(tx => tx.id === txId);
+            const tx = txs.find(tx => tx.id === txId);
             if (tx) {
               setSelectedTransaction(tx);
             }
@@ -47,6 +48,7 @@ export default function Page() {
         setLoading(false);
       }
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const txStatus = useMemo(() => {
@@ -93,6 +95,15 @@ export default function Page() {
       const tx = await fetchTransaction(selectedTransaction.id);
       if (tx) {
         setSelectedTransaction(tx);
+
+        const txInList = transactions.find(tx => tx.id === tx.id);
+        if (util.isObjectEqual(tx, txInList)) {
+          setTransactions(prevTransactions =>
+            prevTransactions.map(prevTx =>
+              prevTx.id === tx.id ? tx : prevTx
+            )
+          );
+        }
       }
     } catch (_) {
     } finally {
@@ -155,7 +166,7 @@ export default function Page() {
         !data.transaction.pushed_at &&
         !data.transaction.rejected_at) {
         console.log('Enough signatures collected, will push transaction automatically.');
-        await handlePushTx();
+        await handlePushTx(true);
       } else {
         setSuccessAlert('Signature submitted successfully');
       }
@@ -196,13 +207,13 @@ export default function Page() {
     }
   };
 
-  const handlePushTx = async () => {
+  const handlePushTx = async (silentPush = false) => {
     if (!selectedTransaction) {
       setErrorAlert('No transaction selected');
       return;
     }
 
-    if (selectedTransaction.signed.length < selectedTransaction.multisig_config.config.threshold) {
+    if (!silentPush && selectedTransaction.signed.length < selectedTransaction.multisig_config.config.threshold) {
       setErrorAlert('More signature is required');
       return;
     }
@@ -223,14 +234,16 @@ export default function Page() {
 
       setSuccessAlert('Transaction pushed successfully');
 
-      // Update the local state to reflect the pushed transaction
-      const updatedTransaction = { ...selectedTransaction, pushed_at: new Date().toISOString() };
-      setSelectedTransaction(updatedTransaction);
-      // setTransactions(prevTransactions =>
-      //   prevTransactions.map(tx =>
-      //     tx.id === updatedTransaction.id ? updatedTransaction : tx
-      //   )
-      // );
+      if (!silentPush) {
+        // Update the local state to reflect the pushed transaction
+        const updatedTransaction = { ...selectedTransaction, pushed_at: new Date().toISOString() };
+        setSelectedTransaction(updatedTransaction);
+        // setTransactions(prevTransactions =>
+        //   prevTransactions.map(tx =>
+        //     tx.id === updatedTransaction.id ? updatedTransaction : tx
+        //   )
+        // );
+      }
     } catch (error) {
       console.error('Error pushing transaction:', error);
       setErrorAlert(`Error pushing transaction: ${error}`);

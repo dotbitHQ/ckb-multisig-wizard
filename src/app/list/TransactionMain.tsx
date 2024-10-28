@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Chip, CircularProgress, Stack, Tooltip } from '@mui/material';
+import { Box, Button, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, TextField, FormControl, InputLabel, Select, MenuItem, Chip, CircularProgress, Stack, Tooltip, IconButton } from '@mui/material';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { DbTransaction } from '@/lib/database';
 import SignerList from './SignerList';
 import SendIcon from '@mui/icons-material/Send';
-
+import CopyToClipboard from 'react-copy-to-clipboard';
+import FileCopyIcon from '@mui/icons-material/FileCopy';
 interface User {
   name: string;
   pubKeyHash: string;
@@ -196,7 +197,16 @@ export default function TransactionMain({
             </TableRow>
             <TableRow>
               <TableCell sx={{ fontWeight: 'bold', textAlign: 'right' }}><Typography color="#c62828" fontWeight="bold">Digest</Typography></TableCell>
-              <TableCell><Typography color="#c62828" fontFamily="monospace">{tx.digest}</Typography></TableCell>
+              <TableCell sx={{ fontFamily: 'monospace', overflowX: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <Typography color="#c62828" fontFamily="monospace">{tx.digest}</Typography>
+                <CopyToClipboard text={tx.digest}>
+                  <Tooltip title="Copy the digest">
+                    <IconButton aria-label="copy">
+                      <FileCopyIcon />
+                    </IconButton>
+                  </Tooltip>
+                </CopyToClipboard>
+              </TableCell>
             </TableRow>
           </TableBody>
         </Table>
