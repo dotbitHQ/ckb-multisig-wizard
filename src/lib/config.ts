@@ -42,6 +42,8 @@ export interface Config {
 }
 
 export default function config(): Config {
+  console.log(`NODE_CONFIG_ENV is ${process.env.NODE_CONFIG_ENV}, so loading config for ${process.env.NODE_CONFIG_ENV} env. `)
+
   const { serverRuntimeConfig } = getConfig()
   return serverRuntimeConfig
 }
