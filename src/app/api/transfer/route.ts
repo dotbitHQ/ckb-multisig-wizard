@@ -80,10 +80,14 @@ export async function POST (req: NextRequest) {
   try {
     const { from, to, value, fee } = data;
 
-    const { stderr: transferError } = serverUtil.createTransferTx(from, to, value, fee, filePath)
+    const { stdout: transferStdout, stderr: transferError } = serverUtil.createTransferTx(from, to, value, fee, filePath)
     if (transferError) {
       logger.error(`Creating transfer transaction failed: ${transferError}`);
       return NextResponse.json({ error: `Creating transfer transaction failed: ${transferError}` }, { status: 500 });
+    }
+    if (transferStdout.toLowerCase().includes('error')) {
+      logger.error(`Creating transfer transaction failed: ${transferStdout}`);
+      return NextResponse.json({ error: `Creating transfer transaction failed: ${transferStdout}` }, { status: 500 });
     }
 
     const ckbCliTx = JSON.parse(fs.readFileSync(filePath, 'utf8'));
