@@ -51,6 +51,8 @@ export function findMultisigConfigByTx(ckb_cli_tx: TxHelper): MultisigConfig | n
     const key = `${multisigConfig.script.code_hash}-${multisigConfig.script.args}`
     multisigConfigs[key] = multisigConfig
 
+    logger.debug(`Existing multisig configs: ${key}`)
+
     if (multisigCodeHash === '') {
       multisigCodeHash = multisigConfig.script.code_hash
     }
@@ -58,6 +60,8 @@ export function findMultisigConfigByTx(ckb_cli_tx: TxHelper): MultisigConfig | n
 
   for (let [key,] of Object.entries(ckb_cli_tx.multisig_configs)) {
     key = `${multisigCodeHash}-${key}`
+
+    logger.debug(`Multisig config in tx: ${key}`)
 
     if (multisigConfigs[key]) {
       return multisigConfigs[key];

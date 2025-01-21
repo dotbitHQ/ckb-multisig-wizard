@@ -171,8 +171,7 @@ export default function TransactionList() {
       if (data.transaction.signed.length >= data.transaction.multisig_config.config.threshold &&
         !data.transaction.pushed_at &&
         !data.transaction.rejected_at) {
-        console.log('Enough signatures collected, will push transaction automatically.');
-        await handlePushTx(true);
+        setSuccessAlert('Enough signatures collected, please click the PUSH button.');
       } else {
         setSuccessAlert('Signature submitted successfully');
       }
@@ -253,7 +252,6 @@ export default function TransactionList() {
     } catch (error) {
       console.error('Error pushing transaction:', error);
       setErrorAlert(`Error pushing transaction: ${error}`);
-    } finally {
       setIsPushingTx(false);
     }
   };
@@ -295,7 +293,12 @@ export default function TransactionList() {
 
       <Snackbar
         open={!!successAlert}
-        onClose={() => setSuccessAlert(null)}
+        onClose={(event, reason) => {
+          if (reason === 'clickaway') {
+            return;
+          }
+          setSuccessAlert(null)
+        }}
         anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
       >
         <Alert onClose={() => setSuccessAlert(null)} severity="success" sx={{ width: '100%' }}>
