@@ -58,14 +58,14 @@ export async function POST (req: NextRequest) {
       }
 
       const tx_hash = util.calcTxHash(ckb_cli_tx)
-      const existingTx = await db.getTxByTxHash(tx_hash)
-      if (existingTx) {
-        result.push({
-          name: 'Transaction JSON',
-          result: `Transaction already uploaded to ${existingTx.tx_json_path.split('/').slice(-2).join('/')}.`,
-        })
-        writeToDb = false
-      }
+      // const existingTx = await db.getTxByTxHash(tx_hash)
+      // if (existingTx) {
+      //   result.push({
+      //     name: 'Transaction JSON',
+      //     result: `Transaction already uploaded to ${existingTx.tx_json_path.split('/').slice(-2).join('/')}.`,
+      //   })
+      //   writeToDb = false
+      // }
 
       if (writeToDb) {
         const fileName = `${tx_hash}.json`;
@@ -109,14 +109,14 @@ export async function POST (req: NextRequest) {
         }
 
         const tx_hash = util.calcTxHash(ckb_cli_tx)
-        const existingTx = await db.getTxByTxHash(tx_hash)
-        if (existingTx) {
-          result.push({
-            name: file.name,
-            result: `Transaction already uploaded to ${existingTx.tx_json_path.split('/').slice(-2).join('/')}.`,
-          })
-          continue
-        }
+        // const existingTx = await db.getTxByTxHash(tx_hash)
+        // if (existingTx) {
+        //   result.push({
+        //     name: file.name,
+        //     result: `Transaction already uploaded to ${existingTx.tx_json_path.split('/').slice(-2).join('/')}.`,
+        //   })
+        //   continue
+        // }
 
         const filePath = path.join(dirPath, file.name);
 
